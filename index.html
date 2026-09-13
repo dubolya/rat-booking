@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Крысиный прокат — бронирование костюмов</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Karla:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #1b1f1d;
+    --surface: #242a27;
+    --surface-2: #2f3630;
+    --accent: #f4c95d;
+    --level1: #f4c95d;
+    --level2: #f0974a;
+    --level3: #e0637a;
+    --selected: #6fb1c9;
+    --text: #f5f1e8;
+    --text-muted: #9ca39c;
+    --border: #3c443d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Karla', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 28px 20px 48px;
+  }
+
+  .app {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 0.5px;
+    line-height: 0.95;
+    margin: 0 0 4px;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 0 24px;
+  }
+
+  .setup-warning {
+    background: #3a2a20;
+    border: 1px solid var(--level2);
+    color: var(--text);
+    padding: 14px 16px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: none;
+    line-height: 1.5;
+  }
+
+  .setup-warning.visible { display: block; }
+  .setup-warning code {
+    background: var(--surface-2);
+    padding: 1px 5px;
+  }
+
+  .name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .name-row label {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  input[type="text"] {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Karla', sans-serif;
+    font-size: 14px;
+    padding: 8px 10px;
+    width: 100%;
+    border-radius: 2px;
+  }
+
+  input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .status-line {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .calendar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px;
+    margin-bottom: 18px;
+    border-radius: 2px;
+  }
+
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .cal-header button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  .cal-header button:hover { border-color: var(--accent); }
+
+  .month-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+  }
+
+  .weekdays, .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .weekdays { margin-bottom: 6px; }
+
+  .weekdays div {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    cursor: pointer;
+    position: relative;
+    border-radius: 2px;
+    color: var(--text);
+  }
+
+  .day.empty { border: none; background: transparent; cursor: default; }
+  .day.past { color: var(--text-muted); cursor: default; opacity: 0.5; }
+  .day.free:hover { border-color: var(--accent); }
+
+  .day.level1 { background: var(--level1); color: #1b1f1d; font-weight: 700; }
+  .day.level2 { background: var(--level2); color: #1b1f1d; font-weight: 700; }
+  .day.level3 { background: var(--level3); color: #1b1f1d; font-weight: 700; cursor: not-allowed; }
+  .day.selected { background: var(--selected); color: #1b1f1d; font-weight: 700; }
+  .day.today { box-shadow: inset 0 0 0 1px var(--accent); }
+
+  .legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .legend .dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 1px;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .dot.free { background: var(--surface-2); border: 1px solid var(--border); }
+  .dot.level1 { background: var(--level1); }
+  .dot.level2 { background: var(--level2); }
+  .dot.level3 { background: var(--level3); }
+  .dot.selected { background: var(--selected); }
+
+  .booking-panel {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border-radius: 2px;
+    display: none;
+  }
+
+  .booking-panel.visible { display: block; }
+
+  .booking-panel .period {
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .booking-panel .row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .costume-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .costume-checks label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .costume-checks label.disabled { cursor: default; color: var(--text-muted); }
+
+  .costume-checks .conflict-note {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .costume-checks input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .costume-checks input[type="checkbox"]:disabled { cursor: not-allowed; }
+
+  .btn {
+    font-family: 'Karla', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 9px 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  .btn-primary { background: var(--accent); color: #1b1f1d; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost { background: none; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); }
+
+  .error {
+    color: var(--level3);
+    font-size: 13px;
+    margin-top: 8px;
+    white-space: pre-line;
+  }
+
+  .upcoming h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    margin: 0 0 10px;
+    font-weight: 400;
+  }
+
+  .booking-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+    font-size: 13px;
+    border-radius: 2px;
+  }
+
+  .booking-item .costume-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-right: 8px;
+  }
+
+  .booking-item .who { color: var(--text-muted); }
+  .booking-item .comment { color: var(--text-muted); font-style: italic; }
+
+  .booking-item button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .booking-item button:hover { border-color: var(--level3); color: var(--level3); }
+
+  .empty-state { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+  .loading { color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Крысиный прокат</h1>
+  <p class="subtitle">Три костюма, одна забота — не забронировать один день дважды.</p>
+
+  <div class="setup-warning" id="setupWarning">
+    ⚠️ Firebase ещё не настроен. Открой <code>index.html</code>, найди блок
+    <code>firebaseConfig</code> в самом низу файла и вставь туда данные из своего
+    проекта Firebase (см. инструкцию SETUP.md рядом с этим файлом).
+  </div>
+
+  <div class="name-row">
+    <label for="nameInput">Твоё имя</label>
+    <input type="text" id="nameInput" placeholder="Например, Аня" />
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+
+  <div class="calendar">
+    <div class="cal-header">
+      <button id="prevMonth">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button id="nextMonth">›</button>
+    </div>
+    <div class="weekdays">
+      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+    </div>
+    <div class="days" id="daysGrid"></div>
+    <div class="legend">
+      <span><span class="dot free"></span>свободны все</span>
+      <span><span class="dot level1"></span>занят 1</span>
+      <span><span class="dot level2"></span>заняты 2</span>
+      <span><span class="dot level3"></span>заняты все 3</span>
+      <span><span class="dot selected"></span>выбрано</span>
+    </div>
+  </div>
+
+  <div class="booking-panel" id="bookingPanel">
+    <div class="period" id="periodLabel"></div>
+    <div class="costume-checks" id="costumeChecks"></div>
+    <div class="row">
+      <input type="text" id="commentInput" placeholder="Комментарий (необязательно)" />
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" id="confirmBooking">Забронировать</button>
+      <button class="btn btn-ghost" id="clearSelection">Сбросить</button>
+    </div>
+    <div class="error" id="conflictMsg"></div>
+  </div>
+
+  <div class="upcoming">
+    <h2>Ближайшие брони</h2>
+    <div id="upcomingList" class="loading">Загрузка…</div>
+  </div>
+</div>
+
+<!-- Firebase SDK (compat-версия — не требует сборки проекта) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+
+<script>
+(function () {
+  // ==========================================================
+  // НАСТРОЙКА FIREBASE — вставь сюда конфиг своего проекта.
+  // Где его взять: см. SETUP.md, шаг «Зарегистрировать веб-приложение».
+  // Эти значения не секретные, их можно спокойно публиковать —
+  // безопасность настраивается правилами Realtime Database, не этим ключом.
+  // ==========================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyCunaXn2v2ZarhCvbrFZpDNgwFIXNiEipw",
+    authDomain: "rat-booking.firebaseapp.com",
+    databaseURL: "https://rat-booking-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "rat-booking",
+    storageBucket: "rat-booking.firebasestorage.app",
+    messagingSenderId: "680697869736",
+    appId: "1:680697869736:web:34c36e2f699d93e2e4999d",
+  };
+
+  const isConfigured = firebaseConfig.apiKey !== "ВАШ_API_KEY";
+  if (!isConfigured) {
+    document.getElementById('setupWarning').classList.add('visible');
+  }
+
+  let db = null;
+  let bookingsRef = null;
+  if (isConfigured) {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    bookingsRef = db.ref('bookings');
+  }
+
+  const COSTUMES = [
+    { id: 1, name: 'Крыса №1' },
+    { id: 2, name: 'Крыса №2' },
+    { id: 3, name: 'Крыса №3' },
+  ];
+  const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const LEVEL_CLASS = { 0: 'free', 1: 'level1', 2: 'level2', 3: 'level3' };
+  const NAME_STORAGE_KEY = 'rat-booking-my-name';
+
+  let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, createdAt}]
+  const today = new Date();
+  let viewYear = today.getFullYear();
+  let viewMonth = today.getMonth();
+  let selStart = null;
+  let selEnd = null;
+  let bookingCostumeIds = new Set(COSTUMES.map((c) => c.id));
+
+  const pad = (n) => (n < 10 ? '0' + n : '' + n);
+  const ymd = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+  const todayStr = ymd(today.getFullYear(), today.getMonth(), today.getDate());
+  const fmtRu = (s) => { const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; };
+
+  function overlaps(aFrom, aTo, bFrom, bTo) {
+    return aFrom <= bTo && bFrom <= aTo;
+  }
+
+  function bookingsFor(costumeId) {
+    return bookings.filter((b) => b.costumeId === costumeId);
+  }
+
+  function bookingsOnDate(dateStr) {
+    return bookings.filter((b) => b.dateFrom <= dateStr && dateStr <= b.dateTo);
+  }
+
+  function costumeName(id) {
+    const c = COSTUMES.find((c) => c.id === id);
+    return c ? c.name : `Костюм ${id}`;
+  }
+
+  function loadName() {
+    try {
+      return localStorage.getItem(NAME_STORAGE_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function saveName(name) {
+    try {
+      localStorage.setItem(NAME_STORAGE_KEY, name);
+    } catch (e) {
+      // не критично, если не сохранилось
+    }
+  }
+
+  function renderStatusLine() {
+    const bookedToday = bookingsOnDate(todayStr).length;
+    const free = COSTUMES.length - bookedToday;
+    document.getElementById('statusLine').textContent =
+      free === COSTUMES.length
+        ? 'Сегодня свободны все костюмы.'
+        : `Сегодня свободно костюмов: ${free} из ${COSTUMES.length}.`;
+  }
+
+  function renderCalendar() {
+    document.getElementById('monthLabel').textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    const grid = document.getElementById('daysGrid');
+    grid.innerHTML = '';
+
+    const firstOfMonth = new Date(viewYear, viewMonth, 1);
+    let startOffset = firstOfMonth.getDay() - 1; // Monday = 0
+    if (startOffset < 0) startOffset = 6;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    for (let i = 0; i < startOffset; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'day empty';
+      grid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = ymd(viewYear, viewMonth, d);
+      const cell = document.createElement('div');
+      cell.className = 'day';
+      cell.textContent = d;
+
+      const dayBookings = bookingsOnDate(dateStr);
+      const level = dayBookings.length;
+      const isPast = dateStr < todayStr;
+      const isFull = level >= COSTUMES.length;
+
+      if (dateStr === todayStr) cell.classList.add('today');
+
+      if (isPast) {
+        cell.classList.add('past');
+      } else {
+        cell.classList.add(LEVEL_CLASS[level] || 'level3');
+      }
+
+      if (dayBookings.length) {
+        cell.title = dayBookings
+          .map((b) => `${costumeName(b.costumeId)}: ${b.name}${b.comment ? ' — ' + b.comment : ''}`)
+          .join('\n');
+      }
+
+      if (!isPast && !isFull) {
+        cell.addEventListener('click', () => handleDayClick(dateStr));
+      } else if (isFull && !isPast) {
+        cell.style.cursor = 'not-allowed';
+      }
+
+      if (selStart && !isPast && !isFull) {
+        const lo = selEnd ? (selStart < selEnd ? selStart : selEnd) : selStart;
+        const hi = selEnd ? (selStart < selEnd ? selEnd : selStart) : selStart;
+        if (dateStr >= lo && dateStr <= hi) {
+          cell.classList.add('selected');
+        }
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function handleDayClick(dateStr) {
+    if (!selStart) {
+      selStart = dateStr;
+      selEnd = null;
+    } else if (!selEnd) {
+      selEnd = dateStr;
+    } else {
+      selStart = dateStr;
+      selEnd = null;
+    }
+    renderCalendar();
+    renderBookingPanel();
+  }
+
+  function clearSelection() {
+    selStart = null;
+    selEnd = null;
+    bookingCostumeIds = new Set(COSTUMES.map((c) => c.id));
+    renderBookingPanel();
+  }
+
+  function currentRange() {
+    if (!selStart) return null;
+    const from = selEnd ? (selStart < selEnd ? selStart : selEnd) : selStart;
+    const to = selEnd ? (selStart < selEnd ? selEnd : selStart) : selStart;
+    return { from, to };
+  }
+
+  function renderBookingPanel() {
+    const panel = document.getElementById('bookingPanel');
+    const conflictMsg = document.getElementById('conflictMsg');
+    const confirmBtn = document.getElementById('confirmBooking');
+    conflictMsg.textContent = '';
+
+    const range = currentRange();
+    if (!range) {
+      panel.classList.remove('visible');
+      return;
+    }
+    panel.classList.add('visible');
+    const { from, to } = range;
+
+    document.getElementById('periodLabel').textContent =
+      from === to
+        ? `Бронь на ${fmtRu(from)}`
+        : `Бронь с ${fmtRu(from)} по ${fmtRu(to)}${!selEnd ? ' (кликни ещё раз на дату окончания, либо жми «Забронировать» на один день)' : ''}`;
+
+    const checksBox = document.getElementById('costumeChecks');
+    checksBox.innerHTML = '';
+    let anyAvailable = false;
+
+    COSTUMES.forEach((c) => {
+      const conflicts = bookingsFor(c.id).filter((b) => overlaps(from, to, b.dateFrom, b.dateTo));
+      const isFree = conflicts.length === 0;
+      if (isFree) anyAvailable = true;
+      if (!isFree) bookingCostumeIds.delete(c.id);
+      else if (!bookingCostumeIds.has(c.id) && !panel.dataset.touched) bookingCostumeIds.add(c.id);
+
+      const label = document.createElement('label');
+      if (!isFree) label.classList.add('disabled');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.disabled = !isFree;
+      cb.checked = isFree && bookingCostumeIds.has(c.id);
+      cb.addEventListener('change', () => {
+        panel.dataset.touched = '1';
+        if (cb.checked) bookingCostumeIds.add(c.id);
+        else bookingCostumeIds.delete(c.id);
+      });
+
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(c.name));
+
+      if (!isFree) {
+        const note = document.createElement('span');
+        note.className = 'conflict-note';
+        note.textContent = ` — занят у ${conflicts[0].name}`;
+        label.appendChild(note);
+      }
+
+      checksBox.appendChild(label);
+    });
+
+    confirmBtn.disabled = !anyAvailable;
+    if (!anyAvailable) {
+      conflictMsg.textContent = 'На эти даты все костюмы уже заняты.';
+    }
+  }
+
+  async function handleConfirmBooking() {
+    if (!isConfigured) {
+      alert('Сначала настрой Firebase — см. SETUP.md');
+      return;
+    }
+    const nameInput = document.getElementById('nameInput');
+    const commentInput = document.getElementById('commentInput');
+    const conflictMsg = document.getElementById('conflictMsg');
+    const name = nameInput.value.trim();
+
+    if (!name) {
+      conflictMsg.textContent = 'Сначала укажи своё имя вверху страницы.';
+      return;
+    }
+    const range = currentRange();
+    if (!range) return;
+    const { from, to } = range;
+
+    const targetIds = Array.from(bookingCostumeIds);
+    if (!targetIds.length) {
+      conflictMsg.textContent = 'Отметь хотя бы один свободный костюм.';
+      return;
+    }
+
+    // финальная проверка на случай, если бронь появилась параллельно
+    const allConflicts = [];
+    targetIds.forEach((cid) => {
+      const conflicts = bookingsFor(cid).filter((b) => overlaps(from, to, b.dateFrom, b.dateTo));
+      conflicts.forEach((c) => allConflicts.push({ ...c, costumeName: costumeName(cid) }));
+    });
+
+    if (allConflicts.length) {
+      conflictMsg.textContent =
+        'Кто-то уже успел забронировать эти даты, ничего не сохранено:\n' +
+        allConflicts.map((c) => `${c.costumeName}: ${fmtRu(c.dateFrom)}–${fmtRu(c.dateTo)} (${c.name})`).join('\n');
+      renderBookingPanel();
+      return;
+    }
+
+    const comment = commentInput.value.trim();
+    const createdAt = new Date().toISOString();
+
+    try {
+      await Promise.all(
+        targetIds.map((cid) =>
+          bookingsRef.push({
+            costumeId: cid,
+            dateFrom: from,
+            dateTo: to,
+            name,
+            comment,
+            createdAt,
+          })
+        )
+      );
+    } catch (e) {
+      conflictMsg.textContent = 'Не удалось сохранить бронь: ' + e.message;
+      return;
+    }
+
+    saveName(name);
+    commentInput.value = '';
+    clearSelection();
+    // список обновится сам через onValue-подписку
+  }
+
+  async function handleCancelBooking(id) {
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) return;
+    const ok = window.confirm(`Отменить бронь «${costumeName(booking.costumeId)}» на ${fmtRu(booking.dateFrom)}–${fmtRu(booking.dateTo)} (${booking.name})?`);
+    if (!ok) return;
+
+    try {
+      await bookingsRef.child(id).remove();
+    } catch (e) {
+      alert('Не удалось отменить бронь: ' + e.message);
+    }
+    // список обновится сам через onValue-подписку
+  }
+
+  function renderUpcoming() {
+    const list = document.getElementById('upcomingList');
+    const upcoming = bookings
+      .filter((b) => b.dateTo >= todayStr)
+      .sort((a, b) => a.dateFrom.localeCompare(b.dateFrom));
+
+    if (!upcoming.length) {
+      list.innerHTML = '<div class="empty-state">Броней пока нет.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    upcoming.forEach((b) => {
+      const item = document.createElement('div');
+      item.className = 'booking-item';
+      const period = b.dateFrom === b.dateTo ? fmtRu(b.dateFrom) : `${fmtRu(b.dateFrom)}–${fmtRu(b.dateTo)}`;
+      item.innerHTML = `
+        <div>
+          <span class="costume-tag">${costumeName(b.costumeId)}</span>
+          <strong>${period}</strong>
+          <span class="who"> — ${b.name}</span>
+          ${b.comment ? `<div class="comment">${b.comment}</div>` : ''}
+        </div>
+      `;
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '✕';
+      delBtn.title = 'Отменить';
+      delBtn.addEventListener('click', () => handleCancelBooking(b.id));
+      item.appendChild(delBtn);
+      list.appendChild(item);
+    });
+  }
+
+  function renderAll() {
+    renderStatusLine();
+    renderCalendar();
+    renderBookingPanel();
+    renderUpcoming();
+  }
+
+  function init() {
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      viewMonth -= 1;
+      if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
+      renderCalendar();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      viewMonth += 1;
+      if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
+      renderCalendar();
+    });
+    document.getElementById('confirmBooking').addEventListener('click', handleConfirmBooking);
+    document.getElementById('clearSelection').addEventListener('click', clearSelection);
+
+    const nameInput = document.getElementById('nameInput');
+    nameInput.value = loadName();
+    nameInput.addEventListener('change', () => saveName(nameInput.value.trim()));
+
+    renderAll();
+
+    if (isConfigured) {
+      // realtime-подписка: список обновляется сам у всех, кто открыл страницу
+      bookingsRef.on('value', (snapshot) => {
+        const val = snapshot.val() || {};
+        bookings = Object.entries(val).map(([id, b]) => ({ id, ...b }));
+        renderAll();
+      }, (error) => {
+        document.getElementById('upcomingList').innerHTML =
+          '<div class="empty-state">Не удалось подключиться к Firebase: ' + error.message + '</div>';
+      });
+    } else {
+      document.getElementById('upcomingList').innerHTML =
+        '<div class="empty-state">Настрой Firebase, чтобы брони начали сохраняться.</div>';
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
