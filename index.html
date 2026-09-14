@@ -31,10 +31,7 @@
     padding: 28px 20px 48px;
   }
 
-  .app {
-    max-width: 640px;
-    margin: 0 auto;
-  }
+  .app { max-width: 640px; margin: 0 auto; }
 
   h1 {
     font-family: 'Bebas Neue', sans-serif;
@@ -44,11 +41,7 @@
     margin: 0 0 4px;
   }
 
-  .subtitle {
-    color: var(--text-muted);
-    font-size: 14px;
-    margin: 0 0 24px;
-  }
+  .subtitle { color: var(--text-muted); font-size: 14px; margin: 0 0 24px; }
 
   .setup-warning {
     background: #3a2a20;
@@ -60,12 +53,8 @@
     display: none;
     line-height: 1.5;
   }
-
   .setup-warning.visible { display: block; }
-  .setup-warning code {
-    background: var(--surface-2);
-    padding: 1px 5px;
-  }
+  .setup-warning code { background: var(--surface-2); padding: 1px 5px; }
 
   .name-row {
     display: flex;
@@ -77,13 +66,9 @@
     border: 1px solid var(--border);
   }
 
-  .name-row label {
-    font-size: 13px;
-    color: var(--text-muted);
-    white-space: nowrap;
-  }
+  .name-row label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
 
-  input[type="text"] {
+  input[type="text"], input[type="tel"], textarea {
     background: var(--surface-2);
     border: 1px solid var(--border);
     color: var(--text);
@@ -94,16 +79,25 @@
     border-radius: 2px;
   }
 
-  input[type="text"]:focus {
+  textarea { resize: vertical; min-height: 44px; }
+
+  input:focus, textarea:focus {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
   }
 
-  .status-line {
-    font-size: 13px;
+  .field-label {
+    font-size: 12px;
     color: var(--text-muted);
-    margin-bottom: 16px;
+    margin-bottom: 4px;
+    display: block;
   }
+
+  .field {
+    margin-bottom: 10px;
+  }
+
+  .status-line { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
 
   .calendar {
     background: var(--surface);
@@ -130,7 +124,6 @@
     cursor: pointer;
     border-radius: 2px;
   }
-
   .cal-header button:hover { border-color: var(--accent); }
 
   .month-label {
@@ -144,14 +137,8 @@
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
   }
-
   .weekdays { margin-bottom: 6px; }
-
-  .weekdays div {
-    text-align: center;
-    font-size: 11px;
-    color: var(--text-muted);
-  }
+  .weekdays div { text-align: center; font-size: 11px; color: var(--text-muted); }
 
   .day {
     aspect-ratio: 1;
@@ -170,7 +157,6 @@
   .day.empty { border: none; background: transparent; cursor: default; }
   .day.past { color: var(--text-muted); cursor: default; opacity: 0.5; }
   .day.free:hover { border-color: var(--accent); }
-
   .day.level1 { background: var(--level1); color: #1b1f1d; font-weight: 700; }
   .day.level2 { background: var(--level2); color: #1b1f1d; font-weight: 700; }
   .day.level3 { background: var(--level3); color: #1b1f1d; font-weight: 700; cursor: not-allowed; }
@@ -185,7 +171,6 @@
     color: var(--text-muted);
     flex-wrap: wrap;
   }
-
   .legend .dot {
     display: inline-block;
     width: 9px;
@@ -194,7 +179,6 @@
     margin-right: 5px;
     vertical-align: middle;
   }
-
   .dot.free { background: var(--surface-2); border: 1px solid var(--border); }
   .dot.level1 { background: var(--level1); }
   .dot.level2 { background: var(--level2); }
@@ -209,20 +193,28 @@
     border-radius: 2px;
     display: none;
   }
-
   .booking-panel.visible { display: block; }
+  .booking-panel .period { font-weight: 700; margin-bottom: 10px; font-size: 14px; }
 
-  .booking-panel .period {
-    font-weight: 700;
-    margin-bottom: 10px;
-    font-size: 14px;
-  }
-
-  .booking-panel .row {
+  .day-details-header {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 10px;
   }
+  .day-details-header .title { font-weight: 700; font-size: 14px; }
+  .day-details-header button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .day-details-header button:hover { color: var(--text); border-color: var(--accent); }
+
+  .row { display: flex; gap: 8px; margin-bottom: 10px; }
 
   .costume-checks {
     display: flex;
@@ -230,23 +222,9 @@
     gap: 8px;
     margin-bottom: 12px;
   }
-
-  .costume-checks label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-
+  .costume-checks label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
   .costume-checks label.disabled { cursor: default; color: var(--text-muted); }
-
-  .costume-checks .conflict-note {
-    color: var(--text-muted);
-    font-size: 12px;
-    font-style: italic;
-  }
-
+  .costume-checks .conflict-note { color: var(--text-muted); font-size: 12px; font-style: italic; }
   .costume-checks input[type="checkbox"] {
     accent-color: var(--accent);
     width: 15px;
@@ -254,8 +232,54 @@
     cursor: pointer;
     flex-shrink: 0;
   }
-
   .costume-checks input[type="checkbox"]:disabled { cursor: not-allowed; }
+
+  .photo-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .photo-preview {
+    position: relative;
+    display: inline-block;
+  }
+  .photo-preview img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .photo-preview .remove-photo {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--level3);
+    color: #1b1f1d;
+    border: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .file-btn {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--text-muted);
+    border: 1px dashed var(--border);
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .file-btn:hover { border-color: var(--accent); color: var(--text); }
+  .file-btn input[type="file"] { display: none; }
 
   .btn {
     font-family: 'Karla', sans-serif;
@@ -266,12 +290,12 @@
     cursor: pointer;
     border-radius: 2px;
   }
-
   .btn-primary { background: var(--accent); color: #1b1f1d; }
   .btn-primary:hover { filter: brightness(1.08); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-ghost { background: none; color: var(--text-muted); border: 1px solid var(--border); }
   .btn-ghost:hover { color: var(--text); }
+  .btn-small { padding: 6px 10px; font-size: 12px; }
 
   .error {
     color: var(--level3);
@@ -289,10 +313,6 @@
   }
 
   .booking-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
     padding: 10px 12px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -301,17 +321,43 @@
     border-radius: 2px;
   }
 
-  .booking-item .costume-tag {
-    display: inline-block;
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-right: 8px;
+  .booking-item .main-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
   }
 
+  .booking-item .costume-tag { display: inline-block; font-size: 11px; color: var(--text-muted); margin-right: 8px; }
   .booking-item .who { color: var(--text-muted); }
-  .booking-item .comment { color: var(--text-muted); font-style: italic; }
+  .booking-item .comment { color: var(--text-muted); font-style: italic; margin-top: 3px; }
+  .booking-item .phone-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 12px;
+    display: inline-block;
+    margin-top: 3px;
+  }
+  .booking-item .phone-link:hover { text-decoration: underline; }
 
-  .booking-item button {
+  .booking-item .thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    margin-top: 6px;
+    display: block;
+  }
+
+  .booking-item .item-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .booking-item .item-actions button {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-muted);
@@ -321,8 +367,11 @@
     border-radius: 2px;
     flex-shrink: 0;
   }
+  .booking-item .item-actions button:hover { color: var(--text); border-color: var(--accent); }
+  .booking-item .item-actions .delete-btn:hover { border-color: var(--level3); color: var(--level3); }
 
-  .booking-item button:hover { border-color: var(--level3); color: var(--level3); }
+  .edit-form { margin-top: 8px; }
+  .edit-form .row { margin-bottom: 8px; }
 
   .empty-state { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
   .loading { color: var(--text-muted); font-size: 13px; }
@@ -336,7 +385,7 @@
   <div class="setup-warning" id="setupWarning">
     ⚠️ Firebase ещё не настроен. Открой <code>index.html</code>, найди блок
     <code>firebaseConfig</code> в самом низу файла и вставь туда данные из своего
-    проекта Firebase (см. инструкцию SETUP.md рядом с этим файлом).
+    проекта Firebase (см. SETUP.md).
   </div>
 
   <div class="name-row">
@@ -368,9 +417,25 @@
   <div class="booking-panel" id="bookingPanel">
     <div class="period" id="periodLabel"></div>
     <div class="costume-checks" id="costumeChecks"></div>
-    <div class="row">
-      <input type="text" id="commentInput" placeholder="Комментарий (необязательно)" />
+
+    <div class="field">
+      <span class="field-label">Комментарий (необязательно)</span>
+      <input type="text" id="commentInput" placeholder="Например: др у Маши" />
     </div>
+
+    <div class="field">
+      <span class="field-label">Телефон для связи (необязательно)</span>
+      <input type="tel" id="phoneInput" placeholder="+375 (29) 123-45-67" />
+    </div>
+
+    <div class="photo-input-row" id="photoRow">
+      <label class="file-btn">
+        📎 Прикрепить скриншот
+        <input type="file" id="photoInput" accept="image/*" />
+      </label>
+      <div id="photoPreviewBox"></div>
+    </div>
+
     <div class="row">
       <button class="btn btn-primary" id="confirmBooking">Забронировать</button>
       <button class="btn btn-ghost" id="clearSelection">Сбросить</button>
@@ -378,13 +443,14 @@
     <div class="error" id="conflictMsg"></div>
   </div>
 
+  <div class="booking-panel" id="dayDetailsPanel"></div>
+
   <div class="upcoming">
     <h2>Ближайшие брони</h2>
     <div id="upcomingList" class="loading">Загрузка…</div>
   </div>
 </div>
 
-<!-- Firebase SDK (compat-версия — не требует сборки проекта) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 
@@ -392,9 +458,6 @@
 (function () {
   // ==========================================================
   // НАСТРОЙКА FIREBASE — вставь сюда конфиг своего проекта.
-  // Где его взять: см. SETUP.md, шаг «Зарегистрировать веб-приложение».
-  // Эти значения не секретные, их можно спокойно публиковать —
-  // безопасность настраивается правилами Realtime Database, не этим ключом.
   // ==========================================================
   const firebaseConfig = {
     apiKey: "AIzaSyCunaXn2v2ZarhCvbrFZpDNgwFIXNiEipw",
@@ -407,9 +470,7 @@
   };
 
   const isConfigured = firebaseConfig.apiKey !== "ВАШ_API_KEY";
-  if (!isConfigured) {
-    document.getElementById('setupWarning').classList.add('visible');
-  }
+  if (!isConfigured) document.getElementById('setupWarning').classList.add('visible');
 
   let db = null;
   let bookingsRef = null;
@@ -427,22 +488,39 @@
   const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
   const LEVEL_CLASS = { 0: 'free', 1: 'level1', 2: 'level2', 3: 'level3' };
   const NAME_STORAGE_KEY = 'rat-booking-my-name';
+  const PHOTO_MAX_DIM = 900;
+  const PHOTO_QUALITY = 0.6;
 
-  let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, createdAt}]
+  let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, phone, photo, createdAt}]
   const today = new Date();
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
   let selStart = null;
   let selEnd = null;
   let bookingCostumeIds = new Set(COSTUMES.map((c) => c.id));
+  let newBookingPhoto = null; // dataURL для новой брони
+  let editingId = null; // id брони, которая сейчас редактируется
+  let editPhoto = null; // dataURL для редактируемой брони (null = без изменений/без фото)
+  let viewDate = null; // дата, для которой открыта панель просмотра/редактирования броней
 
   const pad = (n) => (n < 10 ? '0' + n : '' + n);
   const ymd = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
   const todayStr = ymd(today.getFullYear(), today.getMonth(), today.getDate());
   const fmtRu = (s) => { const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; };
 
+  // ---------- Пересечение дат: последний день брони = день возврата ----------
+  // Если бронь A заканчивается в тот день, когда начинается бронь B — это не
+  // конфликт (передача костюма в тот же день), кроме случая, когда обе брони
+  // — ровно на один и тот же единственный день.
   function overlaps(aFrom, aTo, bFrom, bTo) {
-    return aFrom <= bTo && bFrom <= aTo;
+    if (!(aFrom <= bTo && bFrom <= aTo)) return false;
+    const overlapStart = aFrom > bFrom ? aFrom : bFrom;
+    const overlapEnd = aTo < bTo ? aTo : bTo;
+    if (overlapStart !== overlapEnd) return true; // пересечение больше одного дня — конфликт
+    const aIsSingleDay = aFrom === aTo;
+    const bIsSingleDay = bFrom === bTo;
+    if (aIsSingleDay && bIsSingleDay) return true; // обе брони ровно на этот один день — конфликт
+    return false; // день передачи — не конфликт
   }
 
   function bookingsFor(costumeId) {
@@ -453,34 +531,108 @@
     return bookings.filter((b) => b.dateFrom <= dateStr && dateStr <= b.dateTo);
   }
 
+  function bookedCostumeIdsOnDate(dateStr) {
+    const ids = new Set();
+    bookings.forEach((b) => {
+      if (b.dateFrom <= dateStr && dateStr <= b.dateTo) ids.add(b.costumeId);
+    });
+    return ids;
+  }
+
   function costumeName(id) {
     const c = COSTUMES.find((c) => c.id === id);
     return c ? c.name : `Костюм ${id}`;
   }
 
   function loadName() {
-    try {
-      return localStorage.getItem(NAME_STORAGE_KEY) || '';
-    } catch (e) {
-      return '';
-    }
+    try { return localStorage.getItem(NAME_STORAGE_KEY) || ''; } catch (e) { return ''; }
   }
-
   function saveName(name) {
-    try {
-      localStorage.setItem(NAME_STORAGE_KEY, name);
-    } catch (e) {
-      // не критично, если не сохранилось
-    }
+    try { localStorage.setItem(NAME_STORAGE_KEY, name); } catch (e) {}
   }
 
+  // ---------- Маска телефона +375 ----------
+  function formatBelPhone(raw) {
+    let digits = raw.replace(/\D/g, '');
+    if (!digits.startsWith('375')) {
+      digits = '375' + digits.replace(/^375/, '');
+    }
+    digits = digits.slice(0, 12);
+    const rest = digits.slice(3);
+    let out = '+375';
+    if (rest.length > 0) out += ' (' + rest.slice(0, 2);
+    if (rest.length >= 2) out += ')';
+    if (rest.length > 2) out += ' ' + rest.slice(2, 5);
+    if (rest.length > 5) out += '-' + rest.slice(5, 7);
+    if (rest.length > 7) out += '-' + rest.slice(7, 9);
+    return out;
+  }
+
+  function phoneToTelHref(formatted) {
+    const digits = formatted.replace(/\D/g, '');
+    return 'tel:+' + digits;
+  }
+
+  function setupPhoneMask(input) {
+    input.addEventListener('focus', () => {
+      if (!input.value) input.value = '+375 ';
+    });
+    input.addEventListener('input', () => {
+      const caretWasAtEnd = input.selectionStart === input.value.length;
+      input.value = formatBelPhone(input.value);
+      if (caretWasAtEnd) input.setSelectionRange(input.value.length, input.value.length);
+    });
+  }
+
+  // ---------- Сжатие фото ----------
+  function resizeImage(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+            else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPhotoPreview(container, dataUrl, onRemove) {
+    container.innerHTML = '';
+    if (!dataUrl) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'photo-preview';
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-photo';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Убрать фото';
+    removeBtn.addEventListener('click', onRemove);
+    wrap.appendChild(img);
+    wrap.appendChild(removeBtn);
+    container.appendChild(wrap);
+  }
+
+  // ---------- Статус и календарь ----------
   function renderStatusLine() {
-    const bookedToday = bookingsOnDate(todayStr).length;
+    const bookedToday = bookedCostumeIdsOnDate(todayStr).size;
     const free = COSTUMES.length - bookedToday;
     document.getElementById('statusLine').textContent =
-      free === COSTUMES.length
-        ? 'Сегодня свободны все костюмы.'
-        : `Сегодня свободно костюмов: ${free} из ${COSTUMES.length}.`;
+      free === COSTUMES.length ? 'Сегодня свободны все костюмы.' : `Сегодня свободно костюмов: ${free} из ${COSTUMES.length}.`;
   }
 
   function renderCalendar() {
@@ -489,7 +641,7 @@
     grid.innerHTML = '';
 
     const firstOfMonth = new Date(viewYear, viewMonth, 1);
-    let startOffset = firstOfMonth.getDay() - 1; // Monday = 0
+    let startOffset = firstOfMonth.getDay() - 1;
     if (startOffset < 0) startOffset = 6;
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
@@ -506,17 +658,14 @@
       cell.textContent = d;
 
       const dayBookings = bookingsOnDate(dateStr);
-      const level = dayBookings.length;
+      const bookedIds = bookedCostumeIdsOnDate(dateStr);
+      const level = bookedIds.size;
       const isPast = dateStr < todayStr;
       const isFull = level >= COSTUMES.length;
 
       if (dateStr === todayStr) cell.classList.add('today');
-
-      if (isPast) {
-        cell.classList.add('past');
-      } else {
-        cell.classList.add(LEVEL_CLASS[level] || 'level3');
-      }
+      if (isPast) cell.classList.add('past');
+      else cell.classList.add(LEVEL_CLASS[level] || 'level3');
 
       if (dayBookings.length) {
         cell.title = dayBookings
@@ -524,18 +673,16 @@
           .join('\n');
       }
 
-      if (!isPast && !isFull) {
+      const canSelectForBooking = !isPast && !isFull;
+      if (canSelectForBooking || dayBookings.length > 0) {
+        cell.style.cursor = 'pointer';
         cell.addEventListener('click', () => handleDayClick(dateStr));
-      } else if (isFull && !isPast) {
-        cell.style.cursor = 'not-allowed';
       }
 
       if (selStart && !isPast && !isFull) {
         const lo = selEnd ? (selStart < selEnd ? selStart : selEnd) : selStart;
         const hi = selEnd ? (selStart < selEnd ? selEnd : selStart) : selStart;
-        if (dateStr >= lo && dateStr <= hi) {
-          cell.classList.add('selected');
-        }
+        if (dateStr >= lo && dateStr <= hi) cell.classList.add('selected');
       }
 
       grid.appendChild(cell);
@@ -543,24 +690,44 @@
   }
 
   function handleDayClick(dateStr) {
-    if (!selStart) {
-      selStart = dateStr;
-      selEnd = null;
-    } else if (!selEnd) {
-      selEnd = dateStr;
+    const dayBookings = bookingsOnDate(dateStr);
+    const bookedIds = bookedCostumeIdsOnDate(dateStr);
+    const isPast = dateStr < todayStr;
+    const isFull = bookedIds.size >= COSTUMES.length;
+    const canSelectForBooking = !isPast && !isFull;
+
+    if (canSelectForBooking) {
+      if (!selStart) { selStart = dateStr; selEnd = null; }
+      else if (!selEnd) { selEnd = dateStr; }
+      else { selStart = dateStr; selEnd = null; }
     } else {
-      selStart = dateStr;
+      selStart = null;
       selEnd = null;
     }
+
+    viewDate = dayBookings.length > 0 ? dateStr : null;
+
     renderCalendar();
     renderBookingPanel();
+    renderDayDetails();
+  }
+
+  function closeDayDetails() {
+    viewDate = null;
+    editingId = null;
+    editPhoto = null;
+    renderDayDetails();
   }
 
   function clearSelection() {
     selStart = null;
     selEnd = null;
+    viewDate = null;
     bookingCostumeIds = new Set(COSTUMES.map((c) => c.id));
+    newBookingPhoto = null;
+    renderCalendar();
     renderBookingPanel();
+    renderDayDetails();
   }
 
   function currentRange() {
@@ -577,10 +744,7 @@
     conflictMsg.textContent = '';
 
     const range = currentRange();
-    if (!range) {
-      panel.classList.remove('visible');
-      return;
-    }
+    if (!range) { panel.classList.remove('visible'); return; }
     panel.classList.add('visible');
     const { from, to } = range;
 
@@ -602,91 +766,76 @@
 
       const label = document.createElement('label');
       if (!isFree) label.classList.add('disabled');
-
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.disabled = !isFree;
       cb.checked = isFree && bookingCostumeIds.has(c.id);
       cb.addEventListener('change', () => {
         panel.dataset.touched = '1';
-        if (cb.checked) bookingCostumeIds.add(c.id);
-        else bookingCostumeIds.delete(c.id);
+        if (cb.checked) bookingCostumeIds.add(c.id); else bookingCostumeIds.delete(c.id);
       });
-
       label.appendChild(cb);
       label.appendChild(document.createTextNode(c.name));
-
       if (!isFree) {
         const note = document.createElement('span');
         note.className = 'conflict-note';
         note.textContent = ` — занят у ${conflicts[0].name}`;
         label.appendChild(note);
       }
-
       checksBox.appendChild(label);
     });
 
     confirmBtn.disabled = !anyAvailable;
-    if (!anyAvailable) {
-      conflictMsg.textContent = 'На эти даты все костюмы уже заняты.';
-    }
+    if (!anyAvailable) conflictMsg.textContent = 'На эти даты все костюмы уже заняты.';
+
+    renderPhotoPreview(document.getElementById('photoPreviewBox'), newBookingPhoto, () => {
+      newBookingPhoto = null;
+      document.getElementById('photoInput').value = '';
+      renderPhotoPreview(document.getElementById('photoPreviewBox'), null, () => {});
+    });
   }
 
   async function handleConfirmBooking() {
-    if (!isConfigured) {
-      alert('Сначала настрой Firebase — см. SETUP.md');
-      return;
-    }
+    if (!isConfigured) { alert('Сначала настрой Firebase — см. SETUP.md'); return; }
     const nameInput = document.getElementById('nameInput');
     const commentInput = document.getElementById('commentInput');
+    const phoneInput = document.getElementById('phoneInput');
     const conflictMsg = document.getElementById('conflictMsg');
     const name = nameInput.value.trim();
 
-    if (!name) {
-      conflictMsg.textContent = 'Сначала укажи своё имя вверху страницы.';
-      return;
-    }
+    if (!name) { conflictMsg.textContent = 'Сначала укажи своё имя вверху страницы.'; return; }
     const range = currentRange();
     if (!range) return;
     const { from, to } = range;
 
     const targetIds = Array.from(bookingCostumeIds);
-    if (!targetIds.length) {
-      conflictMsg.textContent = 'Отметь хотя бы один свободный костюм.';
-      return;
-    }
+    if (!targetIds.length) { conflictMsg.textContent = 'Отметь хотя бы один свободный костюм.'; return; }
 
-    // финальная проверка на случай, если бронь появилась параллельно
     const allConflicts = [];
     targetIds.forEach((cid) => {
-      const conflicts = bookingsFor(cid).filter((b) => overlaps(from, to, b.dateFrom, b.dateTo));
-      conflicts.forEach((c) => allConflicts.push({ ...c, costumeName: costumeName(cid) }));
+      bookingsFor(cid).filter((b) => overlaps(from, to, b.dateFrom, b.dateTo))
+        .forEach((c) => allConflicts.push({ ...c, costumeName: costumeName(cid) }));
     });
 
     if (allConflicts.length) {
-      conflictMsg.textContent =
-        'Кто-то уже успел забронировать эти даты, ничего не сохранено:\n' +
+      conflictMsg.textContent = 'Кто-то уже успел забронировать эти даты, ничего не сохранено:\n' +
         allConflicts.map((c) => `${c.costumeName}: ${fmtRu(c.dateFrom)}–${fmtRu(c.dateTo)} (${c.name})`).join('\n');
       renderBookingPanel();
       return;
     }
 
     const comment = commentInput.value.trim();
+    const phoneRaw = phoneInput.value.trim();
+    const phone = phoneRaw && phoneRaw !== '+375' ? phoneRaw : '';
+    const photo = newBookingPhoto || null;
     const createdAt = new Date().toISOString();
 
     try {
-      await Promise.all(
-        targetIds.map((cid) =>
-          bookingsRef.push({
-            costumeId: cid,
-            dateFrom: from,
-            dateTo: to,
-            name,
-            comment,
-            createdAt,
-          })
-        )
-      );
+      await Promise.all(targetIds.map((cid) => {
+        const payload = { costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt };
+        if (photo) payload.photo = photo;
+        return bookingsRef.push(payload);
+      }));
     } catch (e) {
       conflictMsg.textContent = 'Не удалось сохранить бронь: ' + e.message;
       return;
@@ -694,8 +843,8 @@
 
     saveName(name);
     commentInput.value = '';
+    phoneInput.value = '';
     clearSelection();
-    // список обновится сам через onValue-подписку
   }
 
   async function handleCancelBooking(id) {
@@ -703,65 +852,171 @@
     if (!booking) return;
     const ok = window.confirm(`Отменить бронь «${costumeName(booking.costumeId)}» на ${fmtRu(booking.dateFrom)}–${fmtRu(booking.dateTo)} (${booking.name})?`);
     if (!ok) return;
+    try { await bookingsRef.child(id).remove(); }
+    catch (e) { alert('Не удалось отменить бронь: ' + e.message); }
+  }
+
+  function startEdit(id) {
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) return;
+    editingId = id;
+    editPhoto = booking.photo || null;
+    renderUpcoming();
+    renderDayDetails();
+  }
+
+  function cancelEdit() {
+    editingId = null;
+    editPhoto = null;
+    renderUpcoming();
+    renderDayDetails();
+  }
+
+  async function saveEdit(id) {
+    const wrap = document.querySelector(`[data-edit-id="${id}"]`);
+    if (!wrap) return;
+    const comment = wrap.querySelector('.edit-comment').value.trim();
+    const phoneRaw = wrap.querySelector('.edit-phone').value.trim();
+    const phone = phoneRaw && phoneRaw !== '+375' ? phoneRaw : '';
+    const errBox = wrap.querySelector('.error');
+
+    const updates = { comment, phone };
+    if (editPhoto) updates.photo = editPhoto;
+    else updates.photo = null;
 
     try {
-      await bookingsRef.child(id).remove();
+      await bookingsRef.child(id).update(updates);
     } catch (e) {
-      alert('Не удалось отменить бронь: ' + e.message);
+      if (errBox) errBox.textContent = 'Не удалось сохранить: ' + e.message;
+      return;
     }
-    // список обновится сам через onValue-подписку
+    editingId = null;
+    editPhoto = null;
+  }
+
+  function createBookingItemElement(b) {
+    const item = document.createElement('div');
+    item.className = 'booking-item';
+    const period = b.dateFrom === b.dateTo ? fmtRu(b.dateFrom) : `${fmtRu(b.dateFrom)}–${fmtRu(b.dateTo)}`;
+
+    if (editingId === b.id) {
+      item.dataset.editId = b.id;
+      item.innerHTML = `
+        <div class="main-row">
+          <div><span class="costume-tag">${costumeName(b.costumeId)}</span><strong>${period}</strong> — ${b.name}</div>
+        </div>
+        <div class="edit-form">
+          <div class="row"><input type="text" class="edit-comment" placeholder="Комментарий" value="${(b.comment || '').replace(/"/g, '&quot;')}" /></div>
+          <div class="row"><input type="tel" class="edit-phone" placeholder="+375 (29) 123-45-67" value="${(b.phone || '').replace(/"/g, '&quot;')}" /></div>
+          <div class="photo-input-row">
+            <label class="file-btn">📎 Фото
+              <input type="file" class="edit-photo-input" accept="image/*" />
+            </label>
+            <div class="edit-photo-preview"></div>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary btn-small edit-save">Сохранить</button>
+            <button class="btn btn-ghost btn-small edit-cancel">Отмена</button>
+          </div>
+          <div class="error"></div>
+        </div>
+      `;
+      const phoneField = item.querySelector('.edit-phone');
+      setupPhoneMask(phoneField);
+      const previewBox = item.querySelector('.edit-photo-preview');
+      renderPhotoPreview(previewBox, editPhoto, () => { editPhoto = null; renderPhotoPreview(previewBox, null, () => {}); });
+      item.querySelector('.edit-photo-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          editPhoto = await resizeImage(file, PHOTO_MAX_DIM, PHOTO_QUALITY);
+          renderPhotoPreview(previewBox, editPhoto, () => { editPhoto = null; renderPhotoPreview(previewBox, null, () => {}); });
+        } catch (err) {
+          item.querySelector('.error').textContent = 'Не удалось обработать фото.';
+        }
+      });
+      item.querySelector('.edit-save').addEventListener('click', () => saveEdit(b.id));
+      item.querySelector('.edit-cancel').addEventListener('click', cancelEdit);
+    } else {
+      item.innerHTML = `
+        <div class="main-row">
+          <div>
+            <span class="costume-tag">${costumeName(b.costumeId)}</span>
+            <strong>${period}</strong>
+            <span class="who"> — ${b.name}</span>
+            ${b.comment ? `<div class="comment">${b.comment}</div>` : ''}
+            ${b.phone ? `<a class="phone-link" href="${phoneToTelHref(b.phone)}">📞 ${b.phone}</a><br/>` : ''}
+            ${b.photo ? `<img class="thumb" src="${b.photo}" title="Открыть скриншот" />` : ''}
+          </div>
+          <div class="item-actions">
+            <button class="edit-btn" title="Редактировать">✏️</button>
+            <button class="delete-btn" title="Отменить">✕</button>
+          </div>
+        </div>
+      `;
+      item.querySelector('.edit-btn').addEventListener('click', () => { startEdit(b.id); });
+      item.querySelector('.delete-btn').addEventListener('click', () => handleCancelBooking(b.id));
+      const thumb = item.querySelector('.thumb');
+      if (thumb) thumb.addEventListener('click', () => window.open(b.photo, '_blank'));
+    }
+
+    return item;
+  }
+
+  function renderDayDetails() {
+    const panel = document.getElementById('dayDetailsPanel');
+    if (!viewDate) { panel.classList.remove('visible'); panel.innerHTML = ''; return; }
+    panel.classList.add('visible');
+    panel.innerHTML = '';
+
+    const header = document.createElement('div');
+    header.className = 'day-details-header';
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = `Брони на ${fmtRu(viewDate)}`;
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.title = 'Закрыть';
+    closeBtn.addEventListener('click', closeDayDetails);
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    panel.appendChild(header);
+
+    const dayBookings = bookingsOnDate(viewDate).sort((a, b) => a.costumeId - b.costumeId);
+    if (!dayBookings.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'На эту дату броней не найдено.';
+      panel.appendChild(empty);
+      return;
+    }
+    dayBookings.forEach((b) => panel.appendChild(createBookingItemElement(b)));
   }
 
   function renderUpcoming() {
     const list = document.getElementById('upcomingList');
-    const upcoming = bookings
-      .filter((b) => b.dateTo >= todayStr)
-      .sort((a, b) => a.dateFrom.localeCompare(b.dateFrom));
+    const upcoming = bookings.filter((b) => b.dateTo >= todayStr).sort((a, b) => a.dateFrom.localeCompare(b.dateFrom));
 
-    if (!upcoming.length) {
-      list.innerHTML = '<div class="empty-state">Броней пока нет.</div>';
-      return;
-    }
+    if (!upcoming.length) { list.innerHTML = '<div class="empty-state">Броней пока нет.</div>'; return; }
 
     list.innerHTML = '';
-    upcoming.forEach((b) => {
-      const item = document.createElement('div');
-      item.className = 'booking-item';
-      const period = b.dateFrom === b.dateTo ? fmtRu(b.dateFrom) : `${fmtRu(b.dateFrom)}–${fmtRu(b.dateTo)}`;
-      item.innerHTML = `
-        <div>
-          <span class="costume-tag">${costumeName(b.costumeId)}</span>
-          <strong>${period}</strong>
-          <span class="who"> — ${b.name}</span>
-          ${b.comment ? `<div class="comment">${b.comment}</div>` : ''}
-        </div>
-      `;
-      const delBtn = document.createElement('button');
-      delBtn.textContent = '✕';
-      delBtn.title = 'Отменить';
-      delBtn.addEventListener('click', () => handleCancelBooking(b.id));
-      item.appendChild(delBtn);
-      list.appendChild(item);
-    });
+    upcoming.forEach((b) => list.appendChild(createBookingItemElement(b)));
   }
 
   function renderAll() {
     renderStatusLine();
     renderCalendar();
     renderBookingPanel();
+    renderDayDetails();
     renderUpcoming();
   }
 
   function init() {
     document.getElementById('prevMonth').addEventListener('click', () => {
-      viewMonth -= 1;
-      if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
-      renderCalendar();
+      viewMonth -= 1; if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; } renderCalendar();
     });
     document.getElementById('nextMonth').addEventListener('click', () => {
-      viewMonth += 1;
-      if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
-      renderCalendar();
+      viewMonth += 1; if (viewMonth > 11) { viewMonth = 0; viewYear += 1; } renderCalendar();
     });
     document.getElementById('confirmBooking').addEventListener('click', handleConfirmBooking);
     document.getElementById('clearSelection').addEventListener('click', clearSelection);
@@ -770,10 +1025,22 @@
     nameInput.value = loadName();
     nameInput.addEventListener('change', () => saveName(nameInput.value.trim()));
 
+    setupPhoneMask(document.getElementById('phoneInput'));
+
+    document.getElementById('photoInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        newBookingPhoto = await resizeImage(file, PHOTO_MAX_DIM, PHOTO_QUALITY);
+        renderBookingPanel();
+      } catch (err) {
+        document.getElementById('conflictMsg').textContent = 'Не удалось обработать фото.';
+      }
+    });
+
     renderAll();
 
     if (isConfigured) {
-      // realtime-подписка: список обновляется сам у всех, кто открыл страницу
       bookingsRef.on('value', (snapshot) => {
         const val = snapshot.val() || {};
         bookings = Object.entries(val).map(([id, b]) => ({ id, ...b }));
