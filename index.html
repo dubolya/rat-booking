@@ -580,9 +580,15 @@
 
   <div class="calendar">
     <div class="cal-header">
-      <button id="prevMonth">‹</button>
+      <div style="display:flex; gap:4px;">
+        <button id="prevYear" title="Год назад">«</button>
+        <button id="prevMonth">‹</button>
+      </div>
       <div class="month-label" id="monthLabel"></div>
-      <button id="nextMonth">›</button>
+      <div style="display:flex; gap:4px;">
+        <button id="nextMonth">›</button>
+        <button id="nextYear" title="Год вперёд">»</button>
+      </div>
     </div>
     <div class="weekdays">
       <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
@@ -651,9 +657,15 @@
 
   <div id="financeView" style="display:none">
     <div class="period-nav">
-      <button id="financePrevMonth">‹</button>
+      <div style="display:flex; gap:4px;">
+        <button id="financePrevYear" title="Год назад">«</button>
+        <button id="financePrevMonth">‹</button>
+      </div>
       <div class="month-label" id="financeMonthLabel"></div>
-      <button id="financeNextMonth">›</button>
+      <div style="display:flex; gap:4px;">
+        <button id="financeNextMonth">›</button>
+        <button id="financeNextYear" title="Год вперёд">»</button>
+      </div>
     </div>
     <button class="all-time-btn" id="financeAllTimeBtn" style="margin-bottom:16px;">Показать весь период</button>
 
@@ -979,13 +991,13 @@
           .join('\n');
       }
 
-      const canSelectForBooking = !isPast && !isFull;
+      const canSelectForBooking = !isFull;
       if (canSelectForBooking || dayBookings.length > 0) {
         cell.style.cursor = 'pointer';
         cell.addEventListener('click', () => handleDayClick(dateStr));
       }
 
-      if (selStart && !isPast && !isFull) {
+      if (selStart && !isFull) {
         const lo = selEnd ? (selStart < selEnd ? selStart : selEnd) : selStart;
         const hi = selEnd ? (selStart < selEnd ? selEnd : selStart) : selStart;
         if (dateStr >= lo && dateStr <= hi) cell.classList.add('selected');
@@ -998,9 +1010,8 @@
   function handleDayClick(dateStr) {
     const dayBookings = bookingsOnDate(dateStr);
     const bookedIds = bookedCostumeIdsOnDate(dateStr);
-    const isPast = dateStr < todayStr;
     const isFull = bookedIds.size >= COSTUMES.length;
-    const canSelectForBooking = !isPast && !isFull;
+    const canSelectForBooking = !isFull;
 
     if (canSelectForBooking) {
       if (!selStart) { selStart = dateStr; selEnd = null; }
@@ -1342,6 +1353,8 @@
     document.getElementById('financeAllTimeBtn').classList.toggle('active', financeAllTime);
     document.getElementById('financePrevMonth').disabled = financeAllTime;
     document.getElementById('financeNextMonth').disabled = financeAllTime;
+    document.getElementById('financePrevYear').disabled = financeAllTime;
+    document.getElementById('financeNextYear').disabled = financeAllTime;
 
     const paidBookings = bookings.filter((b) => b.paymentAmount && inFinancePeriod(b.dateFrom));
     const cash = paidBookings.filter((b) => b.paymentMethod === 'cash').reduce((s, b) => s + b.paymentAmount, 0);
@@ -1516,6 +1529,12 @@
   }
 
   function init() {
+    document.getElementById('prevYear').addEventListener('click', () => {
+      viewYear -= 1; renderCalendar();
+    });
+    document.getElementById('nextYear').addEventListener('click', () => {
+      viewYear += 1; renderCalendar();
+    });
     document.getElementById('prevMonth').addEventListener('click', () => {
       viewMonth -= 1; if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; } renderCalendar();
     });
@@ -1545,6 +1564,16 @@
     document.getElementById('tabCalendarBtn').addEventListener('click', () => switchTab('calendar'));
     document.getElementById('tabFinanceBtn').addEventListener('click', () => switchTab('finance'));
 
+    document.getElementById('financePrevYear').addEventListener('click', () => {
+      if (financeAllTime) return;
+      financeYear -= 1;
+      renderFinanceSummary(); renderIncomeList(); renderExpenseList();
+    });
+    document.getElementById('financeNextYear').addEventListener('click', () => {
+      if (financeAllTime) return;
+      financeYear += 1;
+      renderFinanceSummary(); renderIncomeList(); renderExpenseList();
+    });
     document.getElementById('financePrevMonth').addEventListener('click', () => {
       if (financeAllTime) return;
       financeMonth -= 1; if (financeMonth < 0) { financeMonth = 11; financeYear -= 1; }
@@ -1596,4 +1625,3 @@
 </script>
 </body>
 </html>
-
