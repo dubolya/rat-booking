@@ -341,6 +341,7 @@
   }
 
   .booking-item .costume-tag { display: inline-block; font-size: 11px; color: var(--text-muted); margin-right: 8px; }
+  .income-list-item .costume-tag { display: inline-block; font-size: 11px; color: var(--text-muted); margin-right: 8px; }
   .booking-item .who { color: var(--text-muted); }
   .booking-item .comment { color: var(--text-muted); font-style: italic; margin-top: 3px; }
   .booking-item .phone-link {
@@ -1168,14 +1169,16 @@
     const perBookingAmount = totalAmount ? Math.round((totalAmount / targetIds.length) * 100) / 100 : null;
     const createdAt = new Date().toISOString();
 
+    let createdIds = [];
     try {
-      await Promise.all(targetIds.map((cid) => {
+      const results = await Promise.all(targetIds.map((cid) => {
         const payload = { costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt };
         if (photo) payload.photo = photo;
         if (paymentMethod) payload.paymentMethod = paymentMethod;
         if (perBookingAmount) payload.paymentAmount = perBookingAmount;
         return bookingsRef.push(payload);
       }));
+      createdIds = results.map((r) => r.key);
     } catch (e) {
       conflictMsg.textContent = 'Не удалось сохранить бронь: ' + e.message;
       return;
@@ -1193,6 +1196,7 @@
             category: 'tax',
             description: `Налог с брони: ${name}, ${targetIds.map((cid) => costumeName(cid)).join(', ')}`,
             amount: taxAmount,
+            bookingIds: createdIds,
             createdAt: new Date().toISOString(),
           });
         } catch (e) {
@@ -1269,6 +1273,7 @@
             category: 'tax',
             description: `Налог с брони: ${booking.name}, ${costumeName(booking.costumeId)}`,
             amount: taxAmount,
+            bookingIds: [id],
             createdAt: new Date().toISOString(),
           });
         } catch (e) {
@@ -1293,15 +1298,27 @@
           <div><span class="costume-tag">${costumeName(b.costumeId)}</span><strong>${period}</strong> — ${b.name}</div>
         </div>
         <div class="edit-form">
-          <div class="row"><input type="text" class="edit-comment" value="${(b.comment || '').replace(/"/g, '&quot;')}" /></div>
-          <div class="row"><input type="tel" class="edit-phone" value="${(b.phone || '').replace(/"/g, '&quot;')}" /></div>
+          <div class="field">
+            <span class="field-label">Комментарий</span>
+            <input type="text" class="edit-comment" value="${(b.comment || '').replace(/"/g, '&quot;')}" />
+          </div>
+          <div class="field">
+            <span class="field-label">Телефон для связи</span>
+            <input type="tel" class="edit-phone" value="${(b.phone || '').replace(/"/g, '&quot;')}" />
+          </div>
           <div class="row">
-            <input type="text" inputmode="decimal" class="edit-amount" value="${b.paymentAmount || ''}" style="flex:1" />
-            <select class="edit-payment-method" style="flex:1">
-              <option value="" ${!b.paymentMethod ? 'selected' : ''}>Не оплачено</option>
-              <option value="cash" ${b.paymentMethod === 'cash' ? 'selected' : ''}>Наличные</option>
-              <option value="noncash" ${b.paymentMethod === 'noncash' ? 'selected' : ''}>Безналичные</option>
-            </select>
+            <div class="field" style="flex:1">
+              <span class="field-label">Сумма, BYN</span>
+              <input type="text" inputmode="decimal" class="edit-amount" value="${b.paymentAmount || ''}" />
+            </div>
+            <div class="field" style="flex:1">
+              <span class="field-label">Способ оплаты</span>
+              <select class="edit-payment-method">
+                <option value="" ${!b.paymentMethod ? 'selected' : ''}>Не оплачено</option>
+                <option value="cash" ${b.paymentMethod === 'cash' ? 'selected' : ''}>Наличные</option>
+                <option value="noncash" ${b.paymentMethod === 'noncash' ? 'selected' : ''}>Безналичные</option>
+              </select>
+            </div>
           </div>
           <div class="photo-input-row">
             <label class="file-btn">📎 Фото
@@ -1438,6 +1455,30 @@
     document.getElementById('incomeBarNoncash').style.width = noncashPct + '%';
   }
 
+  function bookingHasTax(bookingId) {
+    return expenses.some((e) => e.category === 'tax' && Array.isArray(e.bookingIds) && e.bookingIds.includes(bookingId));
+  }
+
+  async function addRetroTax(b) {
+    const taxAmount = Math.round(b.paymentAmount * TAX_RATE * 100) / 100;
+    const ok = window.confirm(
+      `Добавить в расходы налог ${formatMoney(taxAmount)} (10% от ${formatMoney(b.paymentAmount)}) за бронь ${costumeName(b.costumeId)} — ${b.name}, ${fmtRu(b.dateFrom)}?`
+    );
+    if (!ok) return;
+    try {
+      await expensesRef.push({
+        date: b.dateFrom,
+        category: 'tax',
+        description: `Налог с брони: ${b.name}, ${costumeName(b.costumeId)}`,
+        amount: taxAmount,
+        bookingIds: [b.id],
+        createdAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      alert('Не удалось добавить расход по налогу: ' + e.message);
+    }
+  }
+
   function renderIncomeList() {
     const list = document.getElementById('incomeList');
     const paidBookings = bookings
@@ -1451,10 +1492,19 @@
       const item = document.createElement('div');
       item.className = 'income-list-item';
       const period = b.dateFrom === b.dateTo ? fmtRu(b.dateFrom) : `${fmtRu(b.dateFrom)}–${fmtRu(b.dateTo)}`;
+      const taxed = bookingHasTax(b.id);
       item.innerHTML = `
         <div><span class="costume-tag">${costumeName(b.costumeId)}</span>${period} — ${b.name}</div>
-        <div class="amount ${b.paymentMethod}">${formatMoney(b.paymentAmount)}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="amount ${b.paymentMethod}">${formatMoney(b.paymentAmount)}</div>
+          ${taxed
+            ? '<span class="payment-tag" style="background:var(--surface-2); color:var(--text-muted);">✓ налог добавлен</span>'
+            : '<button class="btn btn-ghost btn-small add-tax-btn">+ Налог</button>'}
+        </div>
       `;
+      if (!taxed) {
+        item.querySelector('.add-tax-btn').addEventListener('click', () => addRetroTax(b));
+      }
       list.appendChild(item);
     });
   }
@@ -1468,13 +1518,25 @@
       item.innerHTML = `
         <div class="edit-form" style="flex:1">
           <div class="row">
-            <input type="text" class="edit-exp-date" value="${fmtRu(e.date)}" style="flex:1" />
-            <select class="edit-exp-category" style="flex:1">
-              ${Object.entries(EXPENSE_CATEGORIES).map(([id, nm]) => `<option value="${id}" ${e.category === id ? 'selected' : ''}>${nm}</option>`).join('')}
-            </select>
+            <div class="field" style="flex:1">
+              <span class="field-label">Дата</span>
+              <input type="text" class="edit-exp-date" value="${fmtRu(e.date)}" />
+            </div>
+            <div class="field" style="flex:1">
+              <span class="field-label">Категория</span>
+              <select class="edit-exp-category">
+                ${Object.entries(EXPENSE_CATEGORIES).map(([id, nm]) => `<option value="${id}" ${e.category === id ? 'selected' : ''}>${nm}</option>`).join('')}
+              </select>
+            </div>
           </div>
-          <div class="row"><input type="text" class="edit-exp-desc" value="${(e.description || '').replace(/"/g, '&quot;')}" style="flex:1" /></div>
-          <div class="row"><input type="text" inputmode="decimal" class="edit-exp-amount" value="${e.amount}" style="flex:1" /></div>
+          <div class="field">
+            <span class="field-label">Описание</span>
+            <input type="text" class="edit-exp-desc" value="${(e.description || '').replace(/"/g, '&quot;')}" />
+          </div>
+          <div class="field">
+            <span class="field-label">Сумма, BYN</span>
+            <input type="text" inputmode="decimal" class="edit-exp-amount" value="${e.amount}" />
+          </div>
           <div class="row">
             <button class="btn btn-primary btn-small edit-exp-save">Сохранить</button>
             <button class="btn btn-ghost btn-small edit-exp-cancel">Отмена</button>
