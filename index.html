@@ -156,6 +156,18 @@
 
   .day.empty { border: none; background: transparent; cursor: default; }
   .day.past { color: var(--text-muted); cursor: default; opacity: 0.5; }
+  .day.past.has-booking { opacity: 0.75; cursor: pointer; }
+  .day.past.has-booking::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
   .day.free:hover { border-color: var(--accent); }
   .day.level1 { background: var(--level1); color: #1b1f1d; font-weight: 700; }
   .day.level2 { background: var(--level2); color: #1b1f1d; font-weight: 700; }
@@ -982,7 +994,10 @@
       const isFull = level >= COSTUMES.length;
 
       if (dateStr === todayStr) cell.classList.add('today');
-      if (isPast) cell.classList.add('past');
+      if (isPast) {
+        cell.classList.add('past');
+        if (dayBookings.length > 0) cell.classList.add('has-booking');
+      }
       else cell.classList.add(LEVEL_CLASS[level] || 'level3');
 
       if (dayBookings.length) {
