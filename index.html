@@ -621,18 +621,18 @@
 
     <div class="field">
       <span class="field-label">Комментарий (необязательно)</span>
-      <input type="text" id="commentInput" placeholder="Например: др у Маши" />
+      <input type="text" id="commentInput" />
     </div>
 
     <div class="field">
       <span class="field-label">Телефон для связи (необязательно)</span>
-      <input type="tel" id="phoneInput" placeholder="+375 (29) 123-45-67" />
+      <input type="tel" id="phoneInput" />
     </div>
 
     <div class="row">
       <div class="field" style="flex:1">
         <span class="field-label">Сумма, BYN</span>
-        <input type="text" inputmode="decimal" id="amountInput" placeholder="30" />
+        <input type="text" inputmode="decimal" id="amountInput" />
       </div>
       <div class="field" style="flex:1">
         <span class="field-label">Способ оплаты</span>
@@ -795,6 +795,7 @@
     materials: 'Материалы',
     other: 'Другое',
   };
+  const TAX_RATE = 0.10;
 
   let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, phone, photo, paymentAmount, paymentMethod, createdAt}]
   let expenses = []; // [{id, date, category, description, amount, createdAt}]
@@ -1180,6 +1181,26 @@
       return;
     }
 
+    if (totalAmount) {
+      const taxAmount = Math.round(totalAmount * TAX_RATE * 100) / 100;
+      const wantsTax = window.confirm(
+        `Добавить в расходы налог ${formatMoney(taxAmount)} (10% от ${formatMoney(totalAmount)})?`
+      );
+      if (wantsTax) {
+        try {
+          await expensesRef.push({
+            date: from,
+            category: 'tax',
+            description: `Налог с брони: ${name}, ${targetIds.map((cid) => costumeName(cid)).join(', ')}`,
+            amount: taxAmount,
+            createdAt: new Date().toISOString(),
+          });
+        } catch (e) {
+          conflictMsg.textContent = 'Бронь сохранена, но не удалось добавить расход по налогу: ' + e.message;
+        }
+      }
+    }
+
     saveName(name);
     commentInput.value = '';
     phoneInput.value = '';
@@ -1216,6 +1237,7 @@
   async function saveEdit(id) {
     const wrap = document.querySelector(`[data-edit-id="${id}"]`);
     if (!wrap) return;
+    const booking = bookings.find((b) => b.id === id);
     const comment = wrap.querySelector('.edit-comment').value.trim();
     const phoneRaw = wrap.querySelector('.edit-phone').value.trim();
     const phone = phoneRaw && phoneRaw !== '+375' ? phoneRaw : '';
@@ -1233,6 +1255,28 @@
       if (errBox) errBox.textContent = 'Не удалось сохранить: ' + e.message;
       return;
     }
+
+    const amountChanged = booking && (booking.paymentAmount || null) !== (paymentAmount || null);
+    if (paymentAmount && amountChanged) {
+      const taxAmount = Math.round(paymentAmount * TAX_RATE * 100) / 100;
+      const wantsTax = window.confirm(
+        `Добавить в расходы налог ${formatMoney(taxAmount)} (10% от ${formatMoney(paymentAmount)})?`
+      );
+      if (wantsTax) {
+        try {
+          await expensesRef.push({
+            date: booking.dateFrom,
+            category: 'tax',
+            description: `Налог с брони: ${booking.name}, ${costumeName(booking.costumeId)}`,
+            amount: taxAmount,
+            createdAt: new Date().toISOString(),
+          });
+        } catch (e) {
+          if (errBox) errBox.textContent = 'Бронь сохранена, но не удалось добавить расход по налогу: ' + e.message;
+        }
+      }
+    }
+
     editingId = null;
     editPhoto = null;
   }
@@ -1249,10 +1293,10 @@
           <div><span class="costume-tag">${costumeName(b.costumeId)}</span><strong>${period}</strong> — ${b.name}</div>
         </div>
         <div class="edit-form">
-          <div class="row"><input type="text" class="edit-comment" placeholder="Комментарий" value="${(b.comment || '').replace(/"/g, '&quot;')}" /></div>
-          <div class="row"><input type="tel" class="edit-phone" placeholder="+375 (29) 123-45-67" value="${(b.phone || '').replace(/"/g, '&quot;')}" /></div>
+          <div class="row"><input type="text" class="edit-comment" value="${(b.comment || '').replace(/"/g, '&quot;')}" /></div>
+          <div class="row"><input type="tel" class="edit-phone" value="${(b.phone || '').replace(/"/g, '&quot;')}" /></div>
           <div class="row">
-            <input type="text" inputmode="decimal" class="edit-amount" placeholder="Сумма, BYN" value="${b.paymentAmount || ''}" style="flex:1" />
+            <input type="text" inputmode="decimal" class="edit-amount" value="${b.paymentAmount || ''}" style="flex:1" />
             <select class="edit-payment-method" style="flex:1">
               <option value="" ${!b.paymentMethod ? 'selected' : ''}>Не оплачено</option>
               <option value="cash" ${b.paymentMethod === 'cash' ? 'selected' : ''}>Наличные</option>
