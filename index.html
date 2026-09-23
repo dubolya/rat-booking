@@ -126,6 +126,20 @@
   }
   .cal-header button:hover { border-color: var(--accent); }
 
+  .nav-btn.month {
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .nav-btn.year {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    color: var(--text-muted);
+    align-self: center;
+  }
+
   .month-label {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 22px;
@@ -593,14 +607,14 @@
 
   <div class="calendar">
     <div class="cal-header">
-      <div style="display:flex; gap:4px;">
-        <button id="prevYear" title="Год назад">«</button>
-        <button id="prevMonth">‹</button>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <button id="prevYear" class="nav-btn year" title="Год назад">«</button>
+        <button id="prevMonth" class="nav-btn month">‹</button>
       </div>
       <div class="month-label" id="monthLabel"></div>
-      <div style="display:flex; gap:4px;">
-        <button id="nextMonth">›</button>
-        <button id="nextYear" title="Год вперёд">»</button>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <button id="nextMonth" class="nav-btn month">›</button>
+        <button id="nextYear" class="nav-btn year" title="Год вперёд">»</button>
       </div>
     </div>
     <div class="weekdays">
@@ -670,14 +684,14 @@
 
   <div id="financeView" style="display:none">
     <div class="period-nav">
-      <div style="display:flex; gap:4px;">
-        <button id="financePrevYear" title="Год назад">«</button>
-        <button id="financePrevMonth">‹</button>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <button id="financePrevYear" class="nav-btn year" title="Год назад">«</button>
+        <button id="financePrevMonth" class="nav-btn month">‹</button>
       </div>
       <div class="month-label" id="financeMonthLabel"></div>
-      <div style="display:flex; gap:4px;">
-        <button id="financeNextMonth">›</button>
-        <button id="financeNextYear" title="Год вперёд">»</button>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <button id="financeNextMonth" class="nav-btn month">›</button>
+        <button id="financeNextYear" class="nav-btn year" title="Год вперёд">»</button>
       </div>
     </div>
     <button class="all-time-btn" id="financeAllTimeBtn" style="margin-bottom:16px;">Показать весь период</button>
