@@ -714,7 +714,45 @@
       <span><span class="dot noncash"></span>безналичные</span>
     </div>
 
-    <div class="section-title">Доходы за период</div>
+    <div class="section-title">Учёт налога (за всё время)</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Начислено всего</div>
+        <div class="stat-value" id="taxAccrued">0 BYN</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Оплачено всего</div>
+        <div class="stat-value" id="taxPaid">0 BYN</div>
+      </div>
+      <div class="stat-card profit">
+        <div class="stat-label">К уплате</div>
+        <div class="stat-value" id="taxDue">0 BYN</div>
+      </div>
+    </div>
+
+    <div class="expense-form">
+      <div class="row">
+        <div class="field" style="flex:1">
+          <span class="field-label">Дата оплаты</span>
+          <input type="text" id="taxPaymentDateInput" />
+        </div>
+        <div class="field" style="flex:1">
+          <span class="field-label">Сумма, BYN</span>
+          <input type="text" inputmode="decimal" id="taxPaymentAmountInput" />
+        </div>
+      </div>
+      <div class="field">
+        <span class="field-label">Комментарий</span>
+        <input type="text" id="taxPaymentCommentInput" />
+      </div>
+      <button class="btn btn-primary" id="addTaxPaymentBtn">Отметить оплату налога</button>
+      <div class="error" id="taxPaymentError"></div>
+    </div>
+
+    <div class="section-title">История оплат налога</div>
+    <div id="taxPaymentList" class="loading">Загрузка…</div>
+
+    <div class="section-title" style="margin-top:22px;">Доходы за период</div>
     <div id="incomeList" class="loading">Загрузка…</div>
 
     <div class="section-title" style="margin-top:22px;">Добавить расход</div>
@@ -774,11 +812,13 @@
   let db = null;
   let bookingsRef = null;
   let expensesRef = null;
+  let taxPaymentsRef = null;
   if (isConfigured) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     bookingsRef = db.ref('bookings');
     expensesRef = db.ref('expenses');
+    taxPaymentsRef = db.ref('taxPayments');
   }
 
   const COSTUMES = [
@@ -799,7 +839,8 @@
   const TAX_RATE = 0.10;
 
   let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, phone, photo, paymentAmount, paymentMethod, createdAt}]
-  let expenses = []; // [{id, date, category, description, amount, createdAt}]
+  let expenses = []; // [{id, date, category, description, amount, bookingIds, createdAt}]
+  let taxPayments = []; // [{id, date, amount, comment, createdAt}]
   const today = new Date();
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
@@ -811,6 +852,7 @@
   let editPhoto = null; // dataURL для редактируемой брони (null = без изменений/без фото)
   let viewDate = null; // дата, для которой открыта панель просмотра/редактирования броней
   let editingExpenseId = null; // id расхода, который сейчас редактируется
+  let editingTaxPaymentId = null; // id оплаты налога, которая сейчас редактируется
   let financeYear = today.getFullYear();
   let financeMonth = today.getMonth();
   let financeAllTime = false;
@@ -1631,6 +1673,131 @@
     catch (e) { alert('Не удалось удалить расход: ' + e.message); }
   }
 
+  // ---------- Учёт налога (за всё время, не зависит от выбранного периода) ----------
+  function renderTaxSummary() {
+    const accrued = expenses.filter((e) => e.category === 'tax').reduce((s, e) => s + e.amount, 0);
+    const paid = taxPayments.reduce((s, p) => s + p.amount, 0);
+    const due = Math.round((accrued - paid) * 100) / 100;
+
+    document.getElementById('taxAccrued').textContent = formatMoney(accrued);
+    document.getElementById('taxPaid').textContent = formatMoney(paid);
+    const dueEl = document.getElementById('taxDue');
+    dueEl.textContent = formatMoney(due);
+    dueEl.classList.toggle('negative', due > 0);
+    dueEl.classList.toggle('positive', due <= 0);
+  }
+
+  function createTaxPaymentItemElement(p) {
+    const item = document.createElement('div');
+    item.className = 'expense-item';
+
+    if (editingTaxPaymentId === p.id) {
+      item.dataset.editTaxPaymentId = p.id;
+      item.innerHTML = `
+        <div class="edit-form" style="flex:1">
+          <div class="row">
+            <div class="field" style="flex:1">
+              <span class="field-label">Дата</span>
+              <input type="text" class="edit-tp-date" value="${fmtRu(p.date)}" />
+            </div>
+            <div class="field" style="flex:1">
+              <span class="field-label">Сумма, BYN</span>
+              <input type="text" inputmode="decimal" class="edit-tp-amount" value="${p.amount}" />
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Комментарий</span>
+            <input type="text" class="edit-tp-comment" value="${(p.comment || '').replace(/"/g, '&quot;')}" />
+          </div>
+          <div class="row">
+            <button class="btn btn-primary btn-small edit-tp-save">Сохранить</button>
+            <button class="btn btn-ghost btn-small edit-tp-cancel">Отмена</button>
+          </div>
+          <div class="error"></div>
+        </div>
+      `;
+      item.querySelector('.edit-tp-save').addEventListener('click', () => saveTaxPaymentEdit(p.id));
+      item.querySelector('.edit-tp-cancel').addEventListener('click', () => { editingTaxPaymentId = null; renderTaxPaymentList(); });
+    } else {
+      item.innerHTML = `
+        <div>${fmtRu(p.date)}${p.comment ? ' — ' + p.comment : ''}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="amount" style="color:var(--free,#5fa777);">${formatMoney(p.amount)}</div>
+          <div class="item-actions">
+            <button class="edit-btn" title="Редактировать">✏️</button>
+            <button class="delete-btn" title="Удалить">✕</button>
+          </div>
+        </div>
+      `;
+      item.querySelector('.edit-btn').addEventListener('click', () => { editingTaxPaymentId = p.id; renderTaxPaymentList(); });
+      item.querySelector('.delete-btn').addEventListener('click', () => deleteTaxPayment(p.id));
+    }
+    return item;
+  }
+
+  function renderTaxPaymentList() {
+    const list = document.getElementById('taxPaymentList');
+    const sorted = [...taxPayments].sort((a, b) => b.date.localeCompare(a.date));
+    if (!sorted.length) { list.innerHTML = '<div class="empty-state">Оплат налога пока не отмечено.</div>'; return; }
+    list.innerHTML = '';
+    sorted.forEach((p) => list.appendChild(createTaxPaymentItemElement(p)));
+  }
+
+  async function addTaxPayment() {
+    const errBox = document.getElementById('taxPaymentError');
+    errBox.textContent = '';
+    const dateInput = document.getElementById('taxPaymentDateInput');
+    const amountInput = document.getElementById('taxPaymentAmountInput');
+    const commentInput = document.getElementById('taxPaymentCommentInput');
+
+    const date = parseRuDate(dateInput.value);
+    if (!date) { errBox.textContent = 'Укажи дату в формате ДД.ММ.ГГГГ.'; return; }
+    const amount = parseAmount(amountInput.value);
+    if (!amount) { errBox.textContent = 'Укажи сумму оплаты.'; return; }
+
+    try {
+      await taxPaymentsRef.push({
+        date,
+        amount,
+        comment: commentInput.value.trim(),
+        createdAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      errBox.textContent = 'Не удалось сохранить оплату: ' + e.message;
+      return;
+    }
+    commentInput.value = '';
+    amountInput.value = '';
+  }
+
+  async function saveTaxPaymentEdit(id) {
+    const wrap = document.querySelector(`[data-edit-tax-payment-id="${id}"]`);
+    if (!wrap) return;
+    const errBox = wrap.querySelector('.error');
+    const date = parseRuDate(wrap.querySelector('.edit-tp-date').value);
+    if (!date) { errBox.textContent = 'Неверный формат даты (ДД.ММ.ГГГГ).'; return; }
+    const amount = parseAmount(wrap.querySelector('.edit-tp-amount').value);
+    if (!amount) { errBox.textContent = 'Укажи сумму.'; return; }
+    const comment = wrap.querySelector('.edit-tp-comment').value.trim();
+
+    try {
+      await taxPaymentsRef.child(id).update({ date, amount, comment });
+    } catch (e) {
+      errBox.textContent = 'Не удалось сохранить: ' + e.message;
+      return;
+    }
+    editingTaxPaymentId = null;
+  }
+
+  async function deleteTaxPayment(id) {
+    const p = taxPayments.find((x) => x.id === id);
+    if (!p) return;
+    const ok = window.confirm(`Удалить отметку об оплате налога на ${formatMoney(p.amount)} от ${fmtRu(p.date)}?`);
+    if (!ok) return;
+    try { await taxPaymentsRef.child(id).remove(); }
+    catch (e) { alert('Не удалось удалить: ' + e.message); }
+  }
+
   function switchTab(tab) {
     document.getElementById('calendarView').style.display = tab === 'calendar' ? 'block' : 'none';
     document.getElementById('financeView').style.display = tab === 'finance' ? 'block' : 'none';
@@ -1647,6 +1814,8 @@
     renderFinanceSummary();
     renderIncomeList();
     renderExpenseList();
+    renderTaxSummary();
+    renderTaxPaymentList();
   }
 
   function init() {
@@ -1714,6 +1883,10 @@
     expenseDateInput.value = fmtRu(todayStr);
     document.getElementById('addExpenseBtn').addEventListener('click', addExpense);
 
+    const taxPaymentDateInput = document.getElementById('taxPaymentDateInput');
+    taxPaymentDateInput.value = fmtRu(todayStr);
+    document.getElementById('addTaxPaymentBtn').addEventListener('click', addTaxPayment);
+
     renderAll();
 
     if (isConfigured) {
@@ -1731,8 +1904,18 @@
         renderFinanceSummary();
         renderIncomeList();
         renderExpenseList();
+        renderTaxSummary();
       }, (error) => {
         document.getElementById('expenseList').innerHTML =
+          '<div class="empty-state">Не удалось подключиться к Firebase: ' + error.message + '</div>';
+      });
+      taxPaymentsRef.on('value', (snapshot) => {
+        const val = snapshot.val() || {};
+        taxPayments = Object.entries(val).map(([id, p]) => ({ id, ...p }));
+        renderTaxSummary();
+        renderTaxPaymentList();
+      }, (error) => {
+        document.getElementById('taxPaymentList').innerHTML =
           '<div class="empty-state">Не удалось подключиться к Firebase: ' + error.message + '</div>';
       });
     } else {
