@@ -161,7 +161,7 @@
     justify-content: center;
     font-size: 13px;
     border: 1px solid var(--border);
-    background: var(--surface-2);
+    background-color: var(--surface-2);
     cursor: pointer;
     position: relative;
     border-radius: 2px;
@@ -183,10 +183,13 @@
     background: var(--text-muted);
   }
   .day.free:hover { border-color: var(--accent); }
-  .day.level1 { background: var(--level1); color: #1b1f1d; font-weight: 700; }
-  .day.level2 { background: var(--level2); color: #1b1f1d; font-weight: 700; }
-  .day.level3 { background: var(--level3); color: #1b1f1d; font-weight: 700; cursor: not-allowed; }
-  .day.selected { background: var(--selected); color: #1b1f1d; font-weight: 700; }
+  .day.changeover {
+    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0px, rgba(255,255,255,0.28) 3px, transparent 3px, transparent 7px);
+  }
+  .day.level1 { background-color: var(--level1); color: #1b1f1d; font-weight: 700; }
+  .day.level2 { background-color: var(--level2); color: #1b1f1d; font-weight: 700; }
+  .day.level3 { background-color: var(--level3); color: #1b1f1d; font-weight: 700; cursor: not-allowed; }
+  .day.selected { background-color: var(--selected); color: #1b1f1d; font-weight: 700; }
   .day.today { box-shadow: inset 0 0 0 1px var(--accent); }
 
   .legend {
@@ -210,6 +213,11 @@
   .dot.level2 { background: var(--level2); }
   .dot.level3 { background: var(--level3); }
   .dot.selected { background: var(--selected); }
+  .dot.changeover-demo {
+    background-color: var(--surface-2);
+    background-image: repeating-linear-gradient(45deg, var(--text-muted) 0px, var(--text-muted) 1.5px, transparent 1.5px, transparent 3.5px);
+    border: 1px solid var(--border);
+  }
 
   .booking-panel {
     background: var(--surface);
@@ -580,6 +588,29 @@
   }
   .payment-tag.cash { background: var(--level1); color: #1b1f1d; }
   .payment-tag.noncash { background: var(--selected); color: #1b1f1d; }
+
+  /* ---------- Дашборд ---------- */
+  .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .dashboard-grid .stat-card.highlight { border-color: var(--accent); }
+  .dashboard-grid .stat-card.highlight .stat-value { font-size: 28px; }
+  .dashboard-grid .stat-card .stat-value.positive { color: var(--free, #5fa777); }
+  .dashboard-grid .stat-card .stat-value.negative { color: var(--level3); }
+
+  /* ---------- Кнопка «Добавить» ---------- */
+  .add-section { margin: 20px 0 26px; }
+  .add-dropdown { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding: 10px; background: var(--surface); border: 1px solid var(--border); }
+  .add-type-btn { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; padding: 8px 12px; cursor: pointer; border-radius: 2px; }
+  .add-type-btn:hover { border-color: var(--accent); }
+  .add-type-btn.active { background: var(--accent); color: #1b1f1d; border-color: var(--accent); }
+  .add-form-panel { background: var(--surface); border: 1px solid var(--accent); padding: 14px 16px; margin-top: 10px; border-radius: 2px; }
+
+  /* ---------- Сворачиваемые блоки ---------- */
+  .collapsible-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .collapsible-header .section-title, .collapsible-header h2 { margin: 0; }
+  .toggle-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); font-family: 'Karla', sans-serif; font-size: 12px; padding: 6px 12px; cursor: pointer; border-radius: 2px; white-space: nowrap; }
+  .toggle-btn:hover { color: var(--text); border-color: var(--accent); }
+  .collapsible-content.collapsed { display: none; }
+  .collapsible-block { margin-bottom: 22px; }
 </style>
 </head>
 <body>
@@ -628,6 +659,7 @@
       <span><span class="dot level2"></span>заняты 2</span>
       <span><span class="dot level3"></span>заняты все 3</span>
       <span><span class="dot selected"></span>выбрано</span>
+      <span><span class="dot changeover-demo"></span>приём/возврат в этот день</span>
     </div>
   </div>
 
@@ -677,13 +709,127 @@
 
   <div class="booking-panel" id="dayDetailsPanel"></div>
 
-  <div class="upcoming">
-    <h2>Ближайшие брони</h2>
-    <div id="upcomingList" class="loading">Загрузка…</div>
+  <div class="upcoming collapsible-block">
+    <div class="collapsible-header">
+      <h2>Ближайшие брони</h2>
+      <button class="toggle-btn" data-target="upcomingList">Развернуть</button>
+    </div>
+    <div id="upcomingList" class="collapsible-content collapsed loading">Загрузка…</div>
   </div>
   </div>
 
   <div id="financeView" style="display:none">
+
+    <div class="section-title">📊 Дашборд</div>
+    <div class="dashboard-grid">
+      <div class="stat-card">
+        <div class="stat-label">Доходы всего</div>
+        <div class="stat-value" id="dashIncome">0 BYN</div>
+        <div class="stat-breakdown" id="dashIncomeBreakdown"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Расходы всего (без налогов)</div>
+        <div class="stat-value" id="dashExpenses">0 BYN</div>
+        <div class="stat-breakdown" id="dashExpensesBreakdown"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Налоги начислено</div>
+        <div class="stat-value" id="dashTaxAccrued">0 BYN</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Налоги уплачено</div>
+        <div class="stat-value" id="dashTaxPaid">0 BYN</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Налоги к уплате</div>
+        <div class="stat-value" id="dashTaxDue">0 BYN</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Использовано из прибыли</div>
+        <div class="stat-value" id="dashProfitUsed">0 BYN</div>
+      </div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="stat-card highlight">
+        <div class="stat-label">Чистая прибыль</div>
+        <div class="stat-value" id="dashNetProfit">0 BYN</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">Доступный остаток</div>
+        <div class="stat-value" id="dashAvailable">0 BYN</div>
+      </div>
+    </div>
+
+    <div class="add-section">
+      <button class="btn btn-primary" id="addToggleBtn">+ Добавить</button>
+      <div class="add-dropdown" id="addDropdown" style="display:none;">
+        <button class="add-type-btn" data-type="expense">Расход</button>
+        <button class="add-type-btn" data-type="income">Доход</button>
+        <button class="add-type-btn" data-type="withdrawal">Использование прибыли</button>
+        <button class="add-type-btn" data-type="taxpayment">Уплата налога</button>
+      </div>
+
+      <div class="add-form-panel" id="addExpensePanel" style="display:none;">
+        <div class="row">
+          <div class="field" style="flex:1"><span class="field-label">Дата</span><input type="text" id="expenseDateInput" /></div>
+          <div class="field" style="flex:1"><span class="field-label">Категория</span>
+            <select id="expenseCategoryInput">
+              <option value="tax">Налог</option>
+              <option value="materials">Материалы</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><span class="field-label">Описание</span><input type="text" id="expenseDescInput" /></div>
+        <div class="field"><span class="field-label">Сумма, BYN</span><input type="text" inputmode="decimal" id="expenseAmountInput" /></div>
+        <button class="btn btn-primary" id="addExpenseBtn">Добавить расход</button>
+        <div class="error" id="expenseError"></div>
+      </div>
+
+      <div class="add-form-panel" id="addIncomePanel" style="display:none;">
+        <div class="row">
+          <div class="field" style="flex:1"><span class="field-label">Дата с (взяли)</span><input type="text" id="incomeDateFromInput" /></div>
+          <div class="field" style="flex:1"><span class="field-label">Дата по (вернули)</span><input type="text" id="incomeDateToInput" /></div>
+        </div>
+        <div class="costume-checks" id="incomeCostumeChecks"></div>
+        <div class="field"><span class="field-label">Имя клиента</span><input type="text" id="incomeNameInput" /></div>
+        <div class="field"><span class="field-label">Комментарий</span><input type="text" id="incomeCommentInput" /></div>
+        <div class="field"><span class="field-label">Телефон для связи</span><input type="tel" id="incomePhoneInput" /></div>
+        <div class="row">
+          <div class="field" style="flex:1"><span class="field-label">Сумма, BYN</span><input type="text" inputmode="decimal" id="incomeAmountInput" /></div>
+          <div class="field" style="flex:1"><span class="field-label">Способ оплаты</span>
+            <select id="incomePaymentMethodInput">
+              <option value="cash">Наличные</option>
+              <option value="noncash">Безналичные</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="addIncomeBtn">Добавить доход</button>
+        <div class="error" id="incomeError"></div>
+      </div>
+
+      <div class="add-form-panel" id="addWithdrawalPanel" style="display:none;">
+        <div class="row">
+          <div class="field" style="flex:1"><span class="field-label">Дата</span><input type="text" id="withdrawalDateInput" /></div>
+          <div class="field" style="flex:1"><span class="field-label">Сумма, BYN</span><input type="text" inputmode="decimal" id="withdrawalAmountInput" /></div>
+        </div>
+        <div class="field"><span class="field-label">На что</span><input type="text" id="withdrawalCommentInput" /></div>
+        <button class="btn btn-primary" id="addWithdrawalBtn">Списать из прибыли</button>
+        <div class="error" id="withdrawalError"></div>
+      </div>
+
+      <div class="add-form-panel" id="addTaxPaymentPanel" style="display:none;">
+        <div class="row">
+          <div class="field" style="flex:1"><span class="field-label">Дата оплаты</span><input type="text" id="taxPaymentDateInput" /></div>
+          <div class="field" style="flex:1"><span class="field-label">Сумма, BYN</span><input type="text" inputmode="decimal" id="taxPaymentAmountInput" /></div>
+        </div>
+        <div class="field"><span class="field-label">Комментарий</span><input type="text" id="taxPaymentCommentInput" /></div>
+        <button class="btn btn-primary" id="addTaxPaymentBtn">Отметить оплату налога</button>
+        <div class="error" id="taxPaymentError"></div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px;">Доходы и расходы по периодам</div>
     <div class="period-nav">
       <div style="display:flex; gap:4px; align-items:center;">
         <button id="financePrevYear" class="nav-btn year" title="Год назад">«</button>
@@ -697,152 +843,25 @@
     </div>
     <button class="all-time-btn" id="financeAllTimeBtn" style="margin-bottom:16px;">Показать весь период</button>
 
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">Наличные</div>
-        <div class="stat-value" id="statCash">0 BYN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Безналичные</div>
-        <div class="stat-value" id="statNoncash">0 BYN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Итого доход</div>
-        <div class="stat-value" id="statIncome">0 BYN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Расходы всего</div>
-        <div class="stat-value" id="statExpenses">0 BYN</div>
-        <div class="stat-breakdown" id="statExpensesBreakdown">налог: 0 BYN · прочее: 0 BYN</div>
-      </div>
-      <div class="stat-card profit">
-        <div class="stat-label">Чистая прибыль</div>
-        <div class="stat-value" id="statProfit">0 BYN</div>
-      </div>
+    <div class="collapsible-block">
+      <div class="collapsible-header"><span class="section-title">История доходов</span><button class="toggle-btn" data-target="incomeList">Развернуть</button></div>
+      <div id="incomeList" class="collapsible-content collapsed loading">Загрузка…</div>
+    </div>
+    <div class="collapsible-block">
+      <div class="collapsible-header"><span class="section-title">История расходов</span><button class="toggle-btn" data-target="expenseList">Развернуть</button></div>
+      <div id="expenseList" class="collapsible-content collapsed loading">Загрузка…</div>
+    </div>
+    <div class="collapsible-block">
+      <div class="collapsible-header"><span class="section-title">История оплат налога</span><button class="toggle-btn" data-target="taxPaymentList">Развернуть</button></div>
+      <div id="taxPaymentList" class="collapsible-content collapsed loading">Загрузка…</div>
+    </div>
+    <div class="collapsible-block">
+      <div class="collapsible-header"><span class="section-title">История трат из прибыли</span><button class="toggle-btn" data-target="withdrawalList">Развернуть</button></div>
+      <div id="withdrawalList" class="collapsible-content collapsed loading">Загрузка…</div>
     </div>
 
-    <div class="income-bar" id="incomeBar">
-      <div class="cash-part" id="incomeBarCash" style="width:0%"></div>
-      <div class="noncash-part" id="incomeBarNoncash" style="width:0%"></div>
-    </div>
-    <div class="income-bar-legend">
-      <span><span class="dot cash"></span>наличные</span>
-      <span><span class="dot noncash"></span>безналичные</span>
-    </div>
-
-    <div class="section-title">Учёт налога (за всё время)</div>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">Начислено всего</div>
-        <div class="stat-value" id="taxAccrued">0 BYN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Оплачено всего</div>
-        <div class="stat-value" id="taxPaid">0 BYN</div>
-      </div>
-      <div class="stat-card profit">
-        <div class="stat-label">К уплате</div>
-        <div class="stat-value" id="taxDue">0 BYN</div>
-      </div>
-    </div>
-
-    <div class="expense-form">
-      <div class="row">
-        <div class="field" style="flex:1">
-          <span class="field-label">Дата оплаты</span>
-          <input type="text" id="taxPaymentDateInput" />
-        </div>
-        <div class="field" style="flex:1">
-          <span class="field-label">Сумма, BYN</span>
-          <input type="text" inputmode="decimal" id="taxPaymentAmountInput" />
-        </div>
-      </div>
-      <div class="field">
-        <span class="field-label">Комментарий</span>
-        <input type="text" id="taxPaymentCommentInput" />
-      </div>
-      <button class="btn btn-primary" id="addTaxPaymentBtn">Отметить оплату налога</button>
-      <div class="error" id="taxPaymentError"></div>
-    </div>
-
-    <div class="section-title">История оплат налога</div>
-    <div id="taxPaymentList" class="loading">Загрузка…</div>
-
-    <div class="section-title" style="margin-top:22px;">Использование прибыли (за всё время)</div>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-label">Заработано (чистая прибыль)</div>
-        <div class="stat-value" id="profitEarned">0 BYN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Использовано на личное</div>
-        <div class="stat-value" id="profitUsed">0 BYN</div>
-      </div>
-      <div class="stat-card profit">
-        <div class="stat-label">Остаток доступно</div>
-        <div class="stat-value" id="profitLeft">0 BYN</div>
-      </div>
-    </div>
-    <div style="font-size:12px; color:var(--text-muted); margin:-10px 0 16px;">
-      Это не расход аренды — сумма не влияет на чистую прибыль выше, а просто показывает, сколько из уже заработанного вы потратили на себя (например, кафе).
-    </div>
-
-    <div class="expense-form">
-      <div class="row">
-        <div class="field" style="flex:1">
-          <span class="field-label">Дата</span>
-          <input type="text" id="withdrawalDateInput" />
-        </div>
-        <div class="field" style="flex:1">
-          <span class="field-label">Сумма, BYN</span>
-          <input type="text" inputmode="decimal" id="withdrawalAmountInput" />
-        </div>
-      </div>
-      <div class="field">
-        <span class="field-label">На что</span>
-        <input type="text" id="withdrawalCommentInput" />
-      </div>
-      <button class="btn btn-primary" id="addWithdrawalBtn">Списать из прибыли</button>
-      <div class="error" id="withdrawalError"></div>
-    </div>
-
-    <div class="section-title">История трат из прибыли</div>
-    <div id="withdrawalList" class="loading">Загрузка…</div>
-
-    <div class="section-title" style="margin-top:22px;">Доходы за период</div>
-    <div id="incomeList" class="loading">Загрузка…</div>
-
-    <div class="section-title" style="margin-top:22px;">Добавить расход</div>
-    <div class="expense-form">
-      <div class="row">
-        <div class="field" style="flex:1">
-          <span class="field-label">Дата</span>
-          <input type="text" id="expenseDateInput" placeholder="15.10.2026" />
-        </div>
-        <div class="field" style="flex:1">
-          <span class="field-label">Категория</span>
-          <select id="expenseCategoryInput">
-            <option value="tax">Налог</option>
-            <option value="materials">Материалы</option>
-            <option value="other">Другое</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <span class="field-label">Описание</span>
-        <input type="text" id="expenseDescInput" placeholder="Например: батарейки для подсветки" />
-      </div>
-      <div class="field">
-        <span class="field-label">Сумма, BYN</span>
-        <input type="text" inputmode="decimal" id="expenseAmountInput" placeholder="15" />
-      </div>
-      <button class="btn btn-primary" id="addExpenseBtn">Добавить расход</button>
-      <div class="error" id="expenseError"></div>
-    </div>
-
-    <div class="section-title">Расходы за период</div>
-    <div id="expenseList" class="loading">Загрузка…</div>
   </div>
+
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -906,7 +925,7 @@
   let viewMonth = today.getMonth();
   let selStart = null;
   let selEnd = null;
-  let bookingCostumeIds = new Set(COSTUMES.map((c) => c.id));
+  let bookingCostumeIds = new Set();
   let newBookingPhoto = null; // dataURL для новой брони
   let editingId = null; // id брони, которая сейчас редактируется
   let editPhoto = null; // dataURL для редактируемой брони (null = без изменений/без фото)
@@ -972,6 +991,24 @@
       if (b.dateFrom <= dateStr && dateStr <= b.dateTo) ids.add(b.costumeId);
     });
     return ids;
+  }
+
+  // Костюмы, занятые в эту дату: день приёма и все дни внутри брони считаются
+  // занятыми, а последний день (возврат) — уже нет: в этот день костюм можно
+  // отдать следующему. Бронь ровно на один день занимает этот день целиком.
+  function trulyUnavailableCostumeIds(dateStr) {
+    const ids = new Set();
+    COSTUMES.forEach((c) => {
+      const busy = bookingsFor(c.id).some((b) =>
+        b.dateFrom === b.dateTo ? b.dateFrom === dateStr : (b.dateFrom <= dateStr && dateStr < b.dateTo));
+      if (busy) ids.add(c.id);
+    });
+    return ids;
+  }
+
+  // День приёма или возврата хотя бы одного костюма (для штриховки в календаре)
+  function isChangeoverDate(dateStr) {
+    return bookings.some((b) => b.dateFrom === dateStr || b.dateTo === dateStr);
   }
 
   function costumeName(id) {
@@ -1064,7 +1101,7 @@
 
   // ---------- Статус и календарь ----------
   function renderStatusLine() {
-    const bookedToday = bookedCostumeIdsOnDate(todayStr).size;
+    const bookedToday = trulyUnavailableCostumeIds(todayStr).size;
     const free = COSTUMES.length - bookedToday;
     document.getElementById('statusLine').textContent =
       free === COSTUMES.length ? 'Сегодня свободны все костюмы.' : `Сегодня свободно костюмов: ${free} из ${COSTUMES.length}.`;
@@ -1093,10 +1130,11 @@
       cell.textContent = d;
 
       const dayBookings = bookingsOnDate(dateStr);
-      const bookedIds = bookedCostumeIdsOnDate(dateStr);
+      const bookedIds = trulyUnavailableCostumeIds(dateStr);
       const level = bookedIds.size;
       const isPast = dateStr < todayStr;
       const isFull = level >= COSTUMES.length;
+      const changeover = isChangeoverDate(dateStr);
 
       if (dateStr === todayStr) cell.classList.add('today');
       if (isPast) {
@@ -1104,10 +1142,16 @@
         if (dayBookings.length > 0) cell.classList.add('has-booking');
       }
       else cell.classList.add(LEVEL_CLASS[level] || 'level3');
+      if (changeover && !isPast) cell.classList.add('changeover');
 
       if (dayBookings.length) {
         cell.title = dayBookings
-          .map((b) => `${costumeName(b.costumeId)}: ${b.name}${b.comment ? ' — ' + b.comment : ''}`)
+          .map((b) => {
+            const tag = b.dateFrom === dateStr && b.dateTo === dateStr ? ' (забирают и возвращают в этот день)'
+              : b.dateFrom === dateStr ? ' (забирают в этот день)'
+              : b.dateTo === dateStr ? ' (возвращают в этот день)' : '';
+            return `${costumeName(b.costumeId)}: ${b.name}, ${fmtRu(b.dateFrom)}–${fmtRu(b.dateTo)}${tag}${b.comment ? ' — ' + b.comment : ''}`;
+          })
           .join('\n');
       }
 
@@ -1117,7 +1161,7 @@
         cell.addEventListener('click', () => handleDayClick(dateStr));
       }
 
-      if (selStart && !isFull) {
+      if (selStart) {
         const lo = selEnd ? (selStart < selEnd ? selStart : selEnd) : selStart;
         const hi = selEnd ? (selStart < selEnd ? selEnd : selStart) : selStart;
         if (dateStr >= lo && dateStr <= hi) cell.classList.add('selected');
@@ -1129,9 +1173,16 @@
 
   function handleDayClick(dateStr) {
     const dayBookings = bookingsOnDate(dateStr);
-    const bookedIds = bookedCostumeIdsOnDate(dateStr);
+    const bookedIds = trulyUnavailableCostumeIds(dateStr);
     const isFull = bookedIds.size >= COSTUMES.length;
-    const canSelectForBooking = !isFull;
+    let canSelectForBooking = !isFull;
+    if (isFull && selStart && !selEnd) {
+      // конец диапазона на дне, где другие костюмы уже забирают: например, вернули 10-го,
+      // а другой человек забирает в тот же день — это допустимо, если есть свободный костюм
+      const lo = selStart < dateStr ? selStart : dateStr;
+      const hi = selStart < dateStr ? dateStr : selStart;
+      canSelectForBooking = COSTUMES.some((c) => !bookingsFor(c.id).some((b) => overlaps(lo, hi, b.dateFrom, b.dateTo)));
+    }
 
     if (canSelectForBooking) {
       if (!selStart) { selStart = dateStr; selEnd = null; }
@@ -1160,7 +1211,7 @@
     selStart = null;
     selEnd = null;
     viewDate = null;
-    bookingCostumeIds = new Set(COSTUMES.map((c) => c.id));
+    bookingCostumeIds = new Set();
     newBookingPhoto = null;
     renderCalendar();
     renderBookingPanel();
@@ -1187,8 +1238,8 @@
 
     document.getElementById('periodLabel').textContent =
       from === to
-        ? `Бронь на ${fmtRu(from)}`
-        : `Бронь с ${fmtRu(from)} по ${fmtRu(to)}${!selEnd ? ' (кликни ещё раз на дату окончания, либо жми «Забронировать» на один день)' : ''}`;
+        ? `Забронировать на ${fmtRu(from)}`
+        : `Забронировать с ${fmtRu(from)} по ${fmtRu(to)}${!selEnd ? ' (кликни ещё раз на дату окончания, либо жми «Забронировать» на один день)' : ''}`;
 
     const checksBox = document.getElementById('costumeChecks');
     checksBox.innerHTML = '';
@@ -1199,7 +1250,6 @@
       const isFree = conflicts.length === 0;
       if (isFree) anyAvailable = true;
       if (!isFree) bookingCostumeIds.delete(c.id);
-      else if (!bookingCostumeIds.has(c.id) && !panel.dataset.touched) bookingCostumeIds.add(c.id);
 
       const label = document.createElement('label');
       if (!isFree) label.classList.add('disabled');
@@ -1208,7 +1258,6 @@
       cb.disabled = !isFree;
       cb.checked = isFree && bookingCostumeIds.has(c.id);
       cb.addEventListener('change', () => {
-        panel.dataset.touched = '1';
         if (cb.checked) bookingCostumeIds.add(c.id); else bookingCostumeIds.delete(c.id);
       });
       label.appendChild(cb);
@@ -1216,7 +1265,7 @@
       if (!isFree) {
         const note = document.createElement('span');
         note.className = 'conflict-note';
-        note.textContent = ` — занят у ${conflicts[0].name}`;
+        note.textContent = ` — занят с ${fmtRu(conflicts[0].dateFrom)} по ${fmtRu(conflicts[0].dateTo)} у ${conflicts[0].name}`;
         label.appendChild(note);
       }
       checksBox.appendChild(label);
@@ -1526,41 +1575,6 @@
     return y === financeYear && (m - 1) === financeMonth;
   }
 
-  function renderFinanceSummary() {
-    const label = document.getElementById('financeMonthLabel');
-    label.textContent = financeAllTime ? 'Весь период' : `${MONTH_NAMES[financeMonth]} ${financeYear}`;
-    document.getElementById('financeAllTimeBtn').classList.toggle('active', financeAllTime);
-    document.getElementById('financePrevMonth').disabled = financeAllTime;
-    document.getElementById('financeNextMonth').disabled = financeAllTime;
-    document.getElementById('financePrevYear').disabled = financeAllTime;
-    document.getElementById('financeNextYear').disabled = financeAllTime;
-
-    const paidBookings = bookings.filter((b) => b.paymentAmount && inFinancePeriod(b.dateFrom));
-    const cash = paidBookings.filter((b) => b.paymentMethod === 'cash').reduce((s, b) => s + b.paymentAmount, 0);
-    const noncash = paidBookings.filter((b) => b.paymentMethod === 'noncash').reduce((s, b) => s + b.paymentAmount, 0);
-    const income = cash + noncash;
-    const periodExpenses = expenses.filter((e) => inFinancePeriod(e.date));
-    const expTotal = periodExpenses.reduce((s, e) => s + e.amount, 0);
-    const taxTotal = periodExpenses.filter((e) => e.category === 'tax').reduce((s, e) => s + e.amount, 0);
-    const otherTotal = Math.round((expTotal - taxTotal) * 100) / 100;
-    const profit = income - expTotal;
-
-    document.getElementById('statCash').textContent = formatMoney(cash);
-    document.getElementById('statNoncash').textContent = formatMoney(noncash);
-    document.getElementById('statIncome').textContent = formatMoney(income);
-    document.getElementById('statExpenses').textContent = formatMoney(expTotal);
-    document.getElementById('statExpensesBreakdown').textContent =
-      `налог: ${formatMoney(taxTotal)} · прочее: ${formatMoney(otherTotal)}`;
-    const profitEl = document.getElementById('statProfit');
-    profitEl.textContent = formatMoney(profit);
-    profitEl.classList.toggle('positive', profit >= 0);
-    profitEl.classList.toggle('negative', profit < 0);
-
-    const cashPct = income > 0 ? (cash / income) * 100 : 0;
-    const noncashPct = income > 0 ? (noncash / income) * 100 : 0;
-    document.getElementById('incomeBarCash').style.width = cashPct + '%';
-    document.getElementById('incomeBarNoncash').style.width = noncashPct + '%';
-  }
 
   function bookingHasTax(bookingId) {
     return expenses.some((e) => e.category === 'tax' && Array.isArray(e.bookingIds) && e.bookingIds.includes(bookingId));
@@ -1739,18 +1753,6 @@
   }
 
   // ---------- Учёт налога (за всё время, не зависит от выбранного периода) ----------
-  function renderTaxSummary() {
-    const accrued = expenses.filter((e) => e.category === 'tax').reduce((s, e) => s + e.amount, 0);
-    const paid = taxPayments.reduce((s, p) => s + p.amount, 0);
-    const due = Math.round((accrued - paid) * 100) / 100;
-
-    document.getElementById('taxAccrued').textContent = formatMoney(accrued);
-    document.getElementById('taxPaid').textContent = formatMoney(paid);
-    const dueEl = document.getElementById('taxDue');
-    dueEl.textContent = formatMoney(due);
-    dueEl.classList.toggle('negative', due > 0);
-    dueEl.classList.toggle('positive', due <= 0);
-  }
 
   function createTaxPaymentItemElement(p) {
     const item = document.createElement('div');
@@ -1864,20 +1866,6 @@
   }
 
   // ---------- Использование прибыли на личные нужды (за всё время) ----------
-  function renderProfitUsageSummary() {
-    const allIncome = bookings.filter((b) => b.paymentAmount).reduce((s, b) => s + b.paymentAmount, 0);
-    const allExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const earned = Math.round((allIncome - allExpenses) * 100) / 100;
-    const used = profitWithdrawals.reduce((s, w) => s + w.amount, 0);
-    const left = Math.round((earned - used) * 100) / 100;
-
-    document.getElementById('profitEarned').textContent = formatMoney(earned);
-    document.getElementById('profitUsed').textContent = formatMoney(used);
-    const leftEl = document.getElementById('profitLeft');
-    leftEl.textContent = formatMoney(left);
-    leftEl.classList.toggle('negative', left < 0);
-    leftEl.classList.toggle('positive', left >= 0);
-  }
 
   function createWithdrawalItemElement(w) {
     const item = document.createElement('div');
@@ -1990,6 +1978,200 @@
     catch (e) { alert('Не удалось удалить: ' + e.message); }
   }
 
+
+  function renderFinanceSummary() {
+    document.getElementById('financeMonthLabel').textContent = financeAllTime ? 'Весь период' : `${MONTH_NAMES[financeMonth]} ${financeYear}`;
+    document.getElementById('financeAllTimeBtn').classList.toggle('active', financeAllTime);
+    ['financePrevMonth', 'financeNextMonth', 'financePrevYear', 'financeNextYear'].forEach((id) => {
+      document.getElementById(id).disabled = financeAllTime;
+    });
+  }
+
+  // ---------- Дашборд (за всё время) ----------
+  function renderDashboard() {
+    const r2 = (n) => Math.round(n * 100) / 100;
+    const paid = bookings.filter((b) => b.paymentAmount);
+    const cash = paid.filter((b) => b.paymentMethod === 'cash').reduce((s, b) => s + b.paymentAmount, 0);
+    const noncash = paid.filter((b) => b.paymentMethod === 'noncash').reduce((s, b) => s + b.paymentAmount, 0);
+    const income = r2(cash + noncash);
+
+    const nonTax = expenses.filter((e) => e.category !== 'tax');
+    const expensesTotal = r2(nonTax.reduce((s, e) => s + e.amount, 0));
+    const byCat = {};
+    nonTax.forEach((e) => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
+    const breakdown = Object.keys(EXPENSE_CATEGORIES)
+      .filter((c) => c !== 'tax' && byCat[c])
+      .map((c) => `${EXPENSE_CATEGORIES[c].toLowerCase()}: ${formatMoney(r2(byCat[c]))}`)
+      .join(' · ');
+
+    const taxAccrued = r2(expenses.filter((e) => e.category === 'tax').reduce((s, e) => s + e.amount, 0));
+    const taxPaid = r2(taxPayments.reduce((s, p) => s + p.amount, 0));
+    const taxDue = r2(taxAccrued - taxPaid);
+
+    const netProfit = r2(income - expensesTotal - taxAccrued);
+    const profitUsed = r2(profitWithdrawals.reduce((s, w) => s + w.amount, 0));
+    const available = r2(netProfit - profitUsed);
+
+    const set = (id, text) => { document.getElementById(id).textContent = text; };
+    set('dashIncome', formatMoney(income));
+    set('dashIncomeBreakdown', `нал: ${formatMoney(r2(cash))} · безнал: ${formatMoney(r2(noncash))}`);
+    set('dashExpenses', formatMoney(expensesTotal));
+    set('dashExpensesBreakdown', breakdown || 'расходов пока нет');
+    set('dashTaxAccrued', formatMoney(taxAccrued));
+    set('dashTaxPaid', formatMoney(taxPaid));
+    set('dashTaxDue', formatMoney(taxDue));
+    set('dashProfitUsed', formatMoney(profitUsed));
+    set('dashNetProfit', formatMoney(netProfit));
+    set('dashAvailable', formatMoney(available));
+
+    const dueEl = document.getElementById('dashTaxDue');
+    dueEl.classList.toggle('negative', taxDue > 0);
+    dueEl.classList.toggle('positive', taxDue <= 0);
+    [['dashNetProfit', netProfit], ['dashAvailable', available]].forEach(([id, v]) => {
+      const el = document.getElementById(id);
+      el.classList.toggle('positive', v >= 0);
+      el.classList.toggle('negative', v < 0);
+    });
+  }
+
+  // ---------- Сворачиваемые блоки ----------
+  function setupCollapsibles() {
+    document.querySelectorAll('.toggle-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        const collapsed = target.classList.toggle('collapsed');
+        btn.textContent = collapsed ? 'Развернуть' : 'Свернуть';
+      });
+    });
+  }
+
+  // ---------- Единая кнопка «Добавить» ----------
+  const ADD_PANELS = {
+    expense: 'addExpensePanel',
+    income: 'addIncomePanel',
+    withdrawal: 'addWithdrawalPanel',
+    taxpayment: 'addTaxPaymentPanel',
+  };
+
+  function showAddPanel(type) {
+    Object.entries(ADD_PANELS).forEach(([t, id]) => {
+      document.getElementById(id).style.display = t === type ? 'block' : 'none';
+    });
+    document.querySelectorAll('.add-type-btn').forEach((b) => b.classList.toggle('active', b.dataset.type === type));
+    if (type === 'income') renderIncomeCostumeChecks();
+  }
+
+  function setupAddMenu() {
+    const dropdown = document.getElementById('addDropdown');
+    document.getElementById('addToggleBtn').addEventListener('click', () => {
+      const open = dropdown.style.display !== 'none';
+      dropdown.style.display = open ? 'none' : 'flex';
+      if (open) showAddPanel(null);
+    });
+    document.querySelectorAll('.add-type-btn').forEach((b) => {
+      b.addEventListener('click', () => showAddPanel(b.dataset.type));
+    });
+  }
+
+  // ---------- Добавление дохода из раздела «Финансы» ----------
+  let incomeCostumeIds = new Set();
+
+  function renderIncomeCostumeChecks() {
+    const box = document.getElementById('incomeCostumeChecks');
+    const from = parseRuDate(document.getElementById('incomeDateFromInput').value);
+    const toRaw = document.getElementById('incomeDateToInput').value.trim();
+    const to = toRaw ? parseRuDate(toRaw) : from;
+    box.innerHTML = '';
+    if (!from || !to || to < from) {
+      incomeCostumeIds.clear();
+      box.innerHTML = '<div class="empty-state">Укажи даты (ДД.ММ.ГГГГ), чтобы выбрать костюмы.</div>';
+      return;
+    }
+    COSTUMES.forEach((c) => {
+      const conflicts = bookingsFor(c.id).filter((b) => overlaps(from, to, b.dateFrom, b.dateTo));
+      const isFree = conflicts.length === 0;
+      if (!isFree) incomeCostumeIds.delete(c.id);
+      const label = document.createElement('label');
+      if (!isFree) label.classList.add('disabled');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.disabled = !isFree;
+      cb.checked = isFree && incomeCostumeIds.has(c.id);
+      cb.addEventListener('change', () => {
+        if (cb.checked) incomeCostumeIds.add(c.id); else incomeCostumeIds.delete(c.id);
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(c.name));
+      if (!isFree) {
+        const note = document.createElement('span');
+        note.className = 'conflict-note';
+        note.textContent = ` — занят с ${fmtRu(conflicts[0].dateFrom)} по ${fmtRu(conflicts[0].dateTo)} у ${conflicts[0].name}`;
+        label.appendChild(note);
+      }
+      box.appendChild(label);
+    });
+  }
+
+  async function addIncome() {
+    const errBox = document.getElementById('incomeError');
+    errBox.textContent = '';
+    const from = parseRuDate(document.getElementById('incomeDateFromInput').value);
+    const toRaw = document.getElementById('incomeDateToInput').value.trim();
+    const to = toRaw ? parseRuDate(toRaw) : from;
+    if (!from || !to) { errBox.textContent = 'Укажи даты в формате ДД.ММ.ГГГГ.'; return; }
+    if (to < from) { errBox.textContent = 'Дата «по» раньше даты «с».'; return; }
+    const targetIds = Array.from(incomeCostumeIds);
+    if (!targetIds.length) { errBox.textContent = 'Отметь хотя бы один костюм.'; return; }
+    const name = document.getElementById('incomeNameInput').value.trim();
+    if (!name) { errBox.textContent = 'Укажи имя клиента.'; return; }
+    const totalAmount = parseAmount(document.getElementById('incomeAmountInput').value);
+    if (!totalAmount) { errBox.textContent = 'Укажи сумму.'; return; }
+    const paymentMethod = document.getElementById('incomePaymentMethodInput').value;
+
+    const conflicts = [];
+    targetIds.forEach((cid) => {
+      bookingsFor(cid).filter((b) => overlaps(from, to, b.dateFrom, b.dateTo))
+        .forEach((c) => conflicts.push(`${costumeName(cid)}: ${fmtRu(c.dateFrom)}–${fmtRu(c.dateTo)} (${c.name})`));
+    });
+    if (conflicts.length) { errBox.textContent = 'Даты заняты, ничего не сохранено:\n' + conflicts.join('\n'); renderIncomeCostumeChecks(); return; }
+
+    const comment = document.getElementById('incomeCommentInput').value.trim();
+    const phoneRaw = document.getElementById('incomePhoneInput').value.trim();
+    const phone = phoneRaw && phoneRaw !== '+375' ? phoneRaw : '';
+    const perAmount = Math.round((totalAmount / targetIds.length) * 100) / 100;
+    const createdAt = new Date().toISOString();
+
+    let createdIds = [];
+    try {
+      const results = await Promise.all(targetIds.map((cid) => bookingsRef.push({
+        costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt,
+        paymentMethod, paymentAmount: perAmount,
+      })));
+      createdIds = results.map((r) => r.key);
+    } catch (e) {
+      errBox.textContent = 'Не удалось сохранить: ' + e.message;
+      return;
+    }
+
+    const taxAmount = Math.round(totalAmount * TAX_RATE * 100) / 100;
+    if (window.confirm(`Добавить в расходы налог ${formatMoney(taxAmount)} (10% от ${formatMoney(totalAmount)})?`)) {
+      try {
+        await expensesRef.push({
+          date: from, category: 'tax',
+          description: `Налог с брони: ${name}, ${targetIds.map((cid) => costumeName(cid)).join(', ')}`,
+          amount: taxAmount, bookingIds: createdIds, createdAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        errBox.textContent = 'Доход сохранён, но налог добавить не удалось: ' + e.message;
+      }
+    }
+
+    saveName(name);
+    ['incomeNameInput', 'incomeCommentInput', 'incomePhoneInput', 'incomeAmountInput'].forEach((id) => { document.getElementById(id).value = ''; });
+    incomeCostumeIds = new Set();
+    renderIncomeCostumeChecks();
+  }
+
   function switchTab(tab) {
     document.getElementById('calendarView').style.display = tab === 'calendar' ? 'block' : 'none';
     document.getElementById('financeView').style.display = tab === 'finance' ? 'block' : 'none';
@@ -2006,10 +2188,9 @@
     renderFinanceSummary();
     renderIncomeList();
     renderExpenseList();
-    renderTaxSummary();
     renderTaxPaymentList();
-    renderProfitUsageSummary();
     renderWithdrawalList();
+    renderDashboard();
   }
 
   function init() {
@@ -2085,6 +2266,17 @@
     withdrawalDateInput.value = fmtRu(todayStr);
     document.getElementById('addWithdrawalBtn').addEventListener('click', addWithdrawal);
 
+    const incFrom = document.getElementById('incomeDateFromInput');
+    const incTo = document.getElementById('incomeDateToInput');
+    incFrom.value = fmtRu(todayStr);
+    incTo.value = fmtRu(todayStr);
+    ['input', 'change'].forEach((ev) => { incFrom.addEventListener(ev, renderIncomeCostumeChecks); incTo.addEventListener(ev, renderIncomeCostumeChecks); });
+    setupPhoneMask(document.getElementById('incomePhoneInput'));
+    document.getElementById('addIncomeBtn').addEventListener('click', addIncome);
+
+    setupAddMenu();
+    setupCollapsibles();
+
     renderAll();
 
     if (isConfigured) {
@@ -2102,8 +2294,7 @@
         renderFinanceSummary();
         renderIncomeList();
         renderExpenseList();
-        renderTaxSummary();
-        renderProfitUsageSummary();
+        renderDashboard();
       }, (error) => {
         document.getElementById('expenseList').innerHTML =
           '<div class="empty-state">Не удалось подключиться к Firebase: ' + error.message + '</div>';
@@ -2111,7 +2302,7 @@
       taxPaymentsRef.on('value', (snapshot) => {
         const val = snapshot.val() || {};
         taxPayments = Object.entries(val).map(([id, p]) => ({ id, ...p }));
-        renderTaxSummary();
+        renderDashboard();
         renderTaxPaymentList();
       }, (error) => {
         document.getElementById('taxPaymentList').innerHTML =
@@ -2120,7 +2311,7 @@
       profitWithdrawalsRef.on('value', (snapshot) => {
         const val = snapshot.val() || {};
         profitWithdrawals = Object.entries(val).map(([id, w]) => ({ id, ...w }));
-        renderProfitUsageSummary();
+        renderDashboard();
         renderWithdrawalList();
       }, (error) => {
         document.getElementById('withdrawalList').innerHTML =
