@@ -1024,13 +1024,19 @@
   }
 
   // ---------- Маска телефона +375 ----------
-  function formatBelPhone(raw) {
-    let digits = raw.replace(/\D/g, '');
-    if (!digits.startsWith('375')) {
-      digits = '375' + digits.replace(/^375/, '');
-    }
-    digits = digits.slice(0, 12);
-    const rest = digits.slice(3);
+  function phoneToTelHref(formatted) {
+    const digits = formatted.replace(/\D/g, '');
+    return 'tel:+' + digits;
+  }
+
+  // Цифры номера после кода страны 375 (максимум 9)
+  function phoneRestDigits(str) {
+    let d = str.replace(/\D/g, '');
+    if (d.startsWith('375')) d = d.slice(3);
+    return d.slice(0, 9);
+  }
+
+  function formatPhoneRest(rest) {
     let out = '+375';
     if (rest.length > 0) out += ' (' + rest.slice(0, 2);
     if (rest.length >= 2) out += ')';
@@ -1040,19 +1046,69 @@
     return out;
   }
 
-  function phoneToTelHref(formatted) {
-    const digits = formatted.replace(/\D/g, '');
-    return 'tel:+' + digits;
+  // позиция курсора сразу после n-й цифры (код страны 375 тоже считается)
+  function caretAfterDigits(text, n) {
+    if (n <= 3) return 4;
+    let count = 0;
+    for (let i = 0; i < text.length; i++) {
+      if (/\d/.test(text[i])) { count++; if (count === n) return i + 1; }
+    }
+    return text.length;
   }
 
   function setupPhoneMask(input) {
+    let prev = input.value;
+    const remember = () => { prev = input.value; };
     input.addEventListener('focus', () => {
       if (!input.value) input.value = '+375 ';
+      remember();
     });
-    input.addEventListener('input', () => {
-      const caretWasAtEnd = input.selectionStart === input.value.length;
-      input.value = formatBelPhone(input.value);
-      if (caretWasAtEnd) input.setSelectionRange(input.value.length, input.value.length);
+    input.addEventListener('beforeinput', remember);
+
+    input.addEventListener('input', (e) => {
+      const raw = input.value;
+      const caretRaw = input.selectionStart == null ? raw.length : input.selectionStart;
+      const caretAtEnd = caretRaw >= raw.length;
+      const type = e && e.inputType;
+      const isDelete = (type && type.indexOf('delete') === 0) ||
+        ((!type || type === 'insertCompositionText') && raw.length < prev.length);
+      const rawDigits = raw.replace(/\D/g, '');
+      const digitsBeforeCaret = raw.slice(0, caretRaw).replace(/\D/g, '').length;
+
+      let rest;
+      let digitsTarget = digitsBeforeCaret;
+
+      if (isDelete) {
+        const prevRest = phoneRestDigits(prev);
+        if (rawDigits.length >= 3 + prevRest.length) {
+          // стёрт только символ форматирования (скобка, пробел, дефис): удаляем цифру слева от курсора
+          const idx = digitsBeforeCaret - 4;
+          if (idx >= 0 && idx < prevRest.length) {
+            rest = prevRest.slice(0, idx) + prevRest.slice(idx + 1);
+            digitsTarget = digitsBeforeCaret - 1;
+          } else {
+            rest = prevRest;
+          }
+        } else if (rawDigits.startsWith('375')) {
+          rest = phoneRestDigits(rawDigits);
+        } else if (rawDigits === '' || prevRest === '') {
+          // стёрли всё или код страны при пустом номере — очищаем поле
+          input.value = '';
+          prev = '';
+          return;
+        } else {
+          // код страны +375 удалять частично нельзя
+          rest = prevRest;
+        }
+      } else {
+        rest = phoneRestDigits(rawDigits);
+      }
+
+      const out = formatPhoneRest(rest);
+      input.value = out;
+      const pos = (caretAtEnd && !isDelete) ? out.length : caretAfterDigits(out, digitsTarget);
+      input.setSelectionRange(pos, pos);
+      prev = out;
     });
   }
 
@@ -1401,14 +1457,25 @@
     const paymentAmount = paymentMethod ? parseAmount(wrap.querySelector('.edit-amount').value) : null;
     const errBox = wrap.querySelector('.error');
 
-    const updates = { comment, phone, paymentMethod: paymentMethod, paymentAmount: paymentAmount };
-    if (editPhoto) updates.photo = editPhoto;
-    else updates.photo = null;
+    const photo = editPhoto || null;
+    const updates = { comment, phone, paymentMethod: paymentMethod, paymentAmount: paymentAmount, photo };
+
+    // Закрываем форму ДО записи: иначе Firebase перерисует её в режиме редактирования,
+    // она останется открытой, а повторное «Сохранить» сотрёт фото.
+    editingId = null;
+    editPhoto = null;
+    renderUpcoming();
+    renderDayDetails();
 
     try {
       await bookingsRef.child(id).update(updates);
     } catch (e) {
-      if (errBox) errBox.textContent = 'Не удалось сохранить: ' + e.message;
+      editingId = id;
+      editPhoto = photo;
+      renderUpcoming();
+      renderDayDetails();
+      const box = document.querySelector(`[data-edit-id="${id}"] .error`);
+      if (box) box.textContent = 'Не удалось сохранить: ' + e.message;
       return;
     }
 
@@ -1429,13 +1496,10 @@
             createdAt: new Date().toISOString(),
           });
         } catch (e) {
-          if (errBox) errBox.textContent = 'Бронь сохранена, но не удалось добавить расход по налогу: ' + e.message;
+          alert('Бронь сохранена, но не удалось добавить расход по налогу: ' + e.message);
         }
       }
     }
-
-    editingId = null;
-    editPhoto = null;
   }
 
   function createBookingItemElement(b) {
@@ -1734,13 +1798,16 @@
     const category = wrap.querySelector('.edit-exp-category').value;
     const description = wrap.querySelector('.edit-exp-desc').value.trim();
 
+    editingExpenseId = null;
+    renderExpenseList();
     try {
       await expensesRef.child(id).update({ date, category, description, amount });
     } catch (e) {
-      errBox.textContent = 'Не удалось сохранить: ' + e.message;
-      return;
+      editingExpenseId = id;
+      renderExpenseList();
+      const box = document.querySelector(`[data-edit-expense-id="${id}"] .error`);
+      if (box) box.textContent = 'Не удалось сохранить: ' + e.message;
     }
-    editingExpenseId = null;
   }
 
   async function deleteExpense(id) {
@@ -1847,13 +1914,16 @@
     if (!amount) { errBox.textContent = 'Укажи сумму.'; return; }
     const comment = wrap.querySelector('.edit-tp-comment').value.trim();
 
+    editingTaxPaymentId = null;
+    renderTaxPaymentList();
     try {
       await taxPaymentsRef.child(id).update({ date, amount, comment });
     } catch (e) {
-      errBox.textContent = 'Не удалось сохранить: ' + e.message;
-      return;
+      editingTaxPaymentId = id;
+      renderTaxPaymentList();
+      const box = document.querySelector(`[data-edit-tax-payment-id="${id}"] .error`);
+      if (box) box.textContent = 'Не удалось сохранить: ' + e.message;
     }
-    editingTaxPaymentId = null;
   }
 
   async function deleteTaxPayment(id) {
@@ -1960,13 +2030,16 @@
     if (!amount) { errBox.textContent = 'Укажи сумму.'; return; }
     const comment = wrap.querySelector('.edit-w-comment').value.trim();
 
+    editingWithdrawalId = null;
+    renderWithdrawalList();
     try {
       await profitWithdrawalsRef.child(id).update({ date, amount, comment });
     } catch (e) {
-      errBox.textContent = 'Не удалось сохранить: ' + e.message;
-      return;
+      editingWithdrawalId = id;
+      renderWithdrawalList();
+      const box = document.querySelector(`[data-edit-withdrawal-id="${id}"] .error`);
+      if (box) box.textContent = 'Не удалось сохранить: ' + e.message;
     }
-    editingWithdrawalId = null;
   }
 
   async function deleteWithdrawal(id) {
