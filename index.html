@@ -68,7 +68,7 @@
 
   .name-row label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
 
-  input[type="text"], input[type="tel"], textarea {
+  input[type="text"], input[type="tel"], input[type="date"], textarea {
     background: var(--surface-2);
     border: 1px solid var(--border);
     color: var(--text);
@@ -409,6 +409,10 @@
   .edit-form .row { margin-bottom: 8px; }
 
   .empty-state { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+  input[type="date"] { color-scheme: dark; }
+  .custom-choice { margin-top: 6px; }
+  .meta-line { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .source-tag { font-size: 11px; padding: 1px 6px; border: 1px solid var(--border); color: var(--text-muted); border-radius: 2px; display: inline-block; margin: 3px 6px 0 0; }
   .loading { color: var(--text-muted); font-size: 13px; }
 
   /* ---------- Вкладки ---------- */
@@ -677,6 +681,17 @@
       <input type="tel" id="phoneInput" />
     </div>
 
+    <div class="field">
+      <span class="field-label">Источник заказа (необязательно)</span>
+      <select id="sourceSelect"></select>
+      <div class="custom-choice" id="sourceCustomWrap" style="display:none"><span class="field-label">Название нового источника</span><input type="text" /></div>
+    </div>
+    <div class="field">
+      <span class="field-label">Кто вносит запись (обязательно)</span>
+      <select id="creatorSelect"></select>
+      <div class="custom-choice" id="creatorCustomWrap" style="display:none"><span class="field-label">Имя того, кто вносит запись</span><input type="text" /></div>
+    </div>
+
     <div class="row">
       <div class="field" style="flex:1">
         <span class="field-label">Сумма, BYN</span>
@@ -795,6 +810,16 @@
         <div class="field"><span class="field-label">Имя клиента</span><input type="text" id="incomeNameInput" /></div>
         <div class="field"><span class="field-label">Комментарий</span><input type="text" id="incomeCommentInput" /></div>
         <div class="field"><span class="field-label">Телефон для связи</span><input type="tel" id="incomePhoneInput" /></div>
+        <div class="field">
+          <span class="field-label">Источник заказа (необязательно)</span>
+          <select id="incomeSourceSelect"></select>
+          <div class="custom-choice" id="incomeSourceCustomWrap" style="display:none"><span class="field-label">Название нового источника</span><input type="text" /></div>
+        </div>
+        <div class="field">
+          <span class="field-label">Кто вносит запись (обязательно)</span>
+          <select id="incomeCreatorSelect"></select>
+          <div class="custom-choice" id="incomeCreatorCustomWrap" style="display:none"><span class="field-label">Имя того, кто вносит запись</span><input type="text" /></div>
+        </div>
         <div class="row">
           <div class="field" style="flex:1"><span class="field-label">Сумма, BYN</span><input type="text" inputmode="decimal" id="incomeAmountInput" /></div>
           <div class="field" style="flex:1"><span class="field-label">Способ оплаты</span>
@@ -916,7 +941,7 @@
   };
   const TAX_RATE = 0.10;
 
-  let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, phone, photo, paymentAmount, paymentMethod, createdAt}]
+  let bookings = []; // [{id, costumeId, dateFrom, dateTo, name, comment, phone, photo, paymentAmount, paymentMethod, source, createdAt, createdBy, updatedAt, updatedBy}]
   let expenses = []; // [{id, date, category, description, amount, bookingIds, createdAt}]
   let taxPayments = []; // [{id, date, amount, comment, createdAt}]
   let profitWithdrawals = []; // [{id, date, amount, comment, createdAt}]
@@ -1014,6 +1039,99 @@
   function costumeName(id) {
     const c = COSTUMES.find((c) => c.id === id);
     return c ? c.name : `Костюм ${id}`;
+  }
+
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function fmtDateTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // ---------- Выпадающие списки с возможностью добавить своё значение ----------
+  const DEFAULT_SOURCES = ['TikTok', 'Instagram', 'Куфар', 'Telegram', 'По рекомендации', 'Повторный клиент'];
+  const CREATOR_STORAGE_KEY = 'rat-booking-creator';
+  const CUSTOM_VALUE = '__custom__';
+
+  function loadCreator() { try { return localStorage.getItem(CREATOR_STORAGE_KEY) || ''; } catch (e) { return ''; } }
+  function saveCreator(v) { try { localStorage.setItem(CREATOR_STORAGE_KEY, v); } catch (e) {} }
+
+  function sourceOptions() {
+    const extra = [...new Set(bookings.map((b) => b.source).filter(Boolean))]
+      .filter((v) => !DEFAULT_SOURCES.includes(v))
+      .sort((a, b) => a.localeCompare(b, 'ru'));
+    return DEFAULT_SOURCES.concat(extra);
+  }
+
+  function creatorOptions() {
+    const set = new Set(bookings.map((b) => b.createdBy).filter(Boolean));
+    const me = loadCreator();
+    if (me) set.add(me);
+    return [...set].sort((a, b) => a.localeCompare(b, 'ru'));
+  }
+
+  function buildChoiceOptions(select, options, emptyLabel, value) {
+    select.innerHTML = '';
+    const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; select.appendChild(o); };
+    add('', emptyLabel);
+    (value && !options.includes(value) ? options.concat([value]) : options).forEach((v) => add(v, v));
+    add(CUSTOM_VALUE, '➕ Добавить свой вариант…');
+  }
+
+  function bindChoice(select, customWrap) {
+    if (select.dataset.bound) return;
+    select.dataset.bound = '1';
+    select.addEventListener('change', () => {
+      const isCustom = select.value === CUSTOM_VALUE;
+      customWrap.style.display = isCustom ? 'block' : 'none';
+      if (isCustom) customWrap.querySelector('input').focus();
+    });
+  }
+
+  function setChoice(select, customWrap, options, emptyLabel, value) {
+    bindChoice(select, customWrap);
+    buildChoiceOptions(select, options, emptyLabel, value || '');
+    select.value = value || '';
+    customWrap.style.display = 'none';
+    customWrap.querySelector('input').value = '';
+  }
+
+  // обновить список вариантов, не сбивая то, что человек уже выбрал или набрал
+  function refreshChoice(select, customWrap, options, emptyLabel) {
+    bindChoice(select, customWrap);
+    const isCustom = select.value === CUSTOM_VALUE;
+    const val = isCustom ? '' : select.value;
+    buildChoiceOptions(select, options, emptyLabel, val);
+    select.value = isCustom ? CUSTOM_VALUE : val;
+  }
+
+  function readChoice(select, customWrap) {
+    return select.value === CUSTOM_VALUE ? customWrap.querySelector('input').value.trim() : select.value;
+  }
+
+  const byId = (id) => document.getElementById(id);
+  const CHOICE_FIELDS = [
+    { sel: 'sourceSelect', wrap: 'sourceCustomWrap', kind: 'source' },
+    { sel: 'incomeSourceSelect', wrap: 'incomeSourceCustomWrap', kind: 'source' },
+    { sel: 'creatorSelect', wrap: 'creatorCustomWrap', kind: 'creator' },
+    { sel: 'incomeCreatorSelect', wrap: 'incomeCreatorCustomWrap', kind: 'creator' },
+  ];
+  function refreshChoiceFields() {
+    CHOICE_FIELDS.forEach((f) => {
+      refreshChoice(byId(f.sel), byId(f.wrap), f.kind === 'source' ? sourceOptions() : creatorOptions(), f.kind === 'source' ? 'Не указан' : 'Выбери…');
+    });
+  }
+  // после сохранения запоминаем автора и подставляем его в обе формы (календарь и «Финансы»)
+  function syncCreatorFields(name) {
+    CHOICE_FIELDS.filter((f) => f.kind === 'creator').forEach((f) => {
+      setChoice(byId(f.sel), byId(f.wrap), creatorOptions(), 'Выбери…', name);
+    });
+  }
+  function initChoiceFields() {
+    CHOICE_FIELDS.forEach((f) => {
+      setChoice(byId(f.sel), byId(f.wrap), f.kind === 'source' ? sourceOptions() : creatorOptions(), f.kind === 'source' ? 'Не указан' : 'Выбери…', f.kind === 'creator' ? loadCreator() : '');
+    });
   }
 
   function loadName() {
@@ -1352,6 +1470,9 @@
 
     const targetIds = Array.from(bookingCostumeIds);
     if (!targetIds.length) { conflictMsg.textContent = 'Отметь хотя бы один свободный костюм.'; return; }
+    const createdBy = readChoice(byId('creatorSelect'), byId('creatorCustomWrap'));
+    if (!createdBy) { conflictMsg.textContent = 'Укажи, кто вносит запись.'; return; }
+    const source = readChoice(byId('sourceSelect'), byId('sourceCustomWrap'));
 
     const allConflicts = [];
     targetIds.forEach((cid) => {
@@ -1380,7 +1501,8 @@
     let createdIds = [];
     try {
       const results = await Promise.all(targetIds.map((cid) => {
-        const payload = { costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt };
+        const payload = { costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt, createdBy };
+        if (source) payload.source = source;
         if (photo) payload.photo = photo;
         if (paymentMethod) payload.paymentMethod = paymentMethod;
         if (perBookingAmount) payload.paymentAmount = perBookingAmount;
@@ -1414,6 +1536,9 @@
     }
 
     saveName(name);
+    saveCreator(createdBy);
+    syncCreatorFields(createdBy);
+    setChoice(byId('sourceSelect'), byId('sourceCustomWrap'), sourceOptions(), 'Не указан', '');
     commentInput.value = '';
     phoneInput.value = '';
     amountInput.value = '';
@@ -1457,8 +1582,28 @@
     const paymentAmount = paymentMethod ? parseAmount(wrap.querySelector('.edit-amount').value) : null;
     const errBox = wrap.querySelector('.error');
 
+    const dateFrom = wrap.querySelector('.edit-date-from').value;
+    const dateTo = wrap.querySelector('.edit-date-to').value;
+    if (!dateFrom || !dateTo) { errBox.textContent = 'Укажи даты начала и возврата.'; return; }
+    if (dateTo < dateFrom) { errBox.textContent = 'Дата возврата раньше даты начала.'; return; }
+    const clashes = bookingsFor(booking.costumeId).filter((x) => x.id !== id && overlaps(dateFrom, dateTo, x.dateFrom, x.dateTo));
+    if (clashes.length) {
+      errBox.textContent = `${costumeName(booking.costumeId)} занят в эти даты, изменения не сохранены:\n` +
+        clashes.map((x) => `${fmtRu(x.dateFrom)}–${fmtRu(x.dateTo)} (${x.name})`).join('\n');
+      return;
+    }
+    const source = readChoice(wrap.querySelector('.edit-source'), wrap.querySelector('.edit-source-custom')) || null;
+
     const photo = editPhoto || null;
-    const updates = { comment, phone, paymentMethod: paymentMethod, paymentAmount: paymentAmount, photo };
+    const updates = { dateFrom, dateTo, source, comment, phone, paymentMethod: paymentMethod, paymentAmount: paymentAmount, photo };
+    const changed = booking.dateFrom !== dateFrom || booking.dateTo !== dateTo || (booking.source || null) !== source ||
+      (booking.comment || '') !== comment || (booking.phone || '') !== phone ||
+      (booking.paymentMethod || null) !== paymentMethod || (booking.paymentAmount || null) !== (paymentAmount || null) ||
+      (booking.photo || null) !== photo;
+    if (changed) {
+      updates.updatedAt = new Date().toISOString();
+      updates.updatedBy = loadCreator() || null;
+    }
 
     // Закрываем форму ДО записи: иначе Firebase перерисует её в режиме редактирования,
     // она останется открытой, а повторное «Сохранить» сотрёт фото.
@@ -1477,6 +1622,12 @@
       const box = document.querySelector(`[data-edit-id="${id}"] .error`);
       if (box) box.textContent = 'Не удалось сохранить: ' + e.message;
       return;
+    }
+
+    // налог, привязанный только к этой брони, переезжает на новую дату начала
+    if (booking.dateFrom !== dateFrom) {
+      expenses.filter((e) => e.category === 'tax' && Array.isArray(e.bookingIds) && e.bookingIds.length === 1 && e.bookingIds[0] === id)
+        .forEach((e) => expensesRef.child(e.id).update({ date: dateFrom }));
     }
 
     const amountChanged = booking && (booking.paymentAmount || null) !== (paymentAmount || null);
@@ -1514,6 +1665,21 @@
           <div><span class="costume-tag">${costumeName(b.costumeId)}</span><strong>${period}</strong> — ${b.name}</div>
         </div>
         <div class="edit-form">
+          <div class="row">
+            <div class="field" style="flex:1">
+              <span class="field-label">Дата начала (взяли)</span>
+              <input type="date" class="edit-date-from" value="${b.dateFrom}" />
+            </div>
+            <div class="field" style="flex:1">
+              <span class="field-label">Дата возврата</span>
+              <input type="date" class="edit-date-to" value="${b.dateTo}" />
+            </div>
+          </div>
+          <div class="field">
+            <span class="field-label">Источник заказа</span>
+            <select class="edit-source"></select>
+            <div class="custom-choice edit-source-custom" style="display:none"><span class="field-label">Название нового источника</span><input type="text" /></div>
+          </div>
           <div class="field">
             <span class="field-label">Комментарий</span>
             <input type="text" class="edit-comment" value="${(b.comment || '').replace(/"/g, '&quot;')}" />
@@ -1551,6 +1717,7 @@
       `;
       const phoneField = item.querySelector('.edit-phone');
       setupPhoneMask(phoneField);
+      setChoice(item.querySelector('.edit-source'), item.querySelector('.edit-source-custom'), sourceOptions(), 'Не указан', b.source || '');
       const previewBox = item.querySelector('.edit-photo-preview');
       renderPhotoPreview(previewBox, editPhoto, () => { editPhoto = null; renderPhotoPreview(previewBox, null, () => {}); });
       item.querySelector('.edit-photo-input').addEventListener('change', async (e) => {
@@ -1573,9 +1740,12 @@
             <strong>${period}</strong>
             <span class="who"> — ${b.name}</span>
             ${b.comment ? `<div class="comment">${b.comment}</div>` : ''}
+            ${b.source ? `<span class="source-tag">источник: ${esc(b.source)}</span>` : ''}
             ${b.phone ? `<a class="phone-link" href="${phoneToTelHref(b.phone)}">📞 ${b.phone}</a><br/>` : ''}
             ${b.paymentAmount ? `<span class="payment-tag ${b.paymentMethod === 'cash' ? 'cash' : 'noncash'}">${formatMoney(b.paymentAmount)} · ${b.paymentMethod === 'cash' ? 'нал' : 'безнал'}</span>` : ''}
             ${b.photo ? `<img class="thumb" src="${b.photo}" title="Открыть скриншот" />` : ''}
+            ${b.createdAt ? `<div class="meta-line">создано ${fmtDateTime(b.createdAt)}${b.createdBy ? ' · ' + esc(b.createdBy) : ''}</div>` : ''}
+            ${b.updatedAt ? `<div class="meta-line">изменено ${fmtDateTime(b.updatedAt)}${b.updatedBy ? ' · ' + esc(b.updatedBy) : ''}</div>` : ''}
           </div>
           <div class="item-actions">
             <button class="edit-btn" title="Редактировать">✏️</button>
@@ -2197,6 +2367,9 @@
     if (!targetIds.length) { errBox.textContent = 'Отметь хотя бы один костюм.'; return; }
     const name = document.getElementById('incomeNameInput').value.trim();
     if (!name) { errBox.textContent = 'Укажи имя клиента.'; return; }
+    const createdBy = readChoice(byId('incomeCreatorSelect'), byId('incomeCreatorCustomWrap'));
+    if (!createdBy) { errBox.textContent = 'Укажи, кто вносит запись.'; return; }
+    const source = readChoice(byId('incomeSourceSelect'), byId('incomeSourceCustomWrap'));
     const totalAmount = parseAmount(document.getElementById('incomeAmountInput').value);
     if (!totalAmount) { errBox.textContent = 'Укажи сумму.'; return; }
     const paymentMethod = document.getElementById('incomePaymentMethodInput').value;
@@ -2217,8 +2390,9 @@
     let createdIds = [];
     try {
       const results = await Promise.all(targetIds.map((cid) => bookingsRef.push({
-        costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt,
+        costumeId: cid, dateFrom: from, dateTo: to, name, comment, phone, createdAt, createdBy,
         paymentMethod, paymentAmount: perAmount,
+        ...(source ? { source } : {}),
       })));
       createdIds = results.map((r) => r.key);
     } catch (e) {
@@ -2240,6 +2414,9 @@
     }
 
     saveName(name);
+    saveCreator(createdBy);
+    syncCreatorFields(createdBy);
+    setChoice(byId('incomeSourceSelect'), byId('incomeSourceCustomWrap'), sourceOptions(), 'Не указан', '');
     ['incomeNameInput', 'incomeCommentInput', 'incomePhoneInput', 'incomeAmountInput'].forEach((id) => { document.getElementById(id).value = ''; });
     incomeCostumeIds = new Set();
     renderIncomeCostumeChecks();
@@ -2253,6 +2430,7 @@
   }
 
   function renderAll() {
+    refreshChoiceFields();
     renderStatusLine();
     renderCalendar();
     renderBookingPanel();
@@ -2287,6 +2465,7 @@
     nameInput.addEventListener('change', () => saveName(nameInput.value.trim()));
 
     setupPhoneMask(document.getElementById('phoneInput'));
+    initChoiceFields();
 
     document.getElementById('photoInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
